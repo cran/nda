@@ -1,0 +1,15 @@
+citHeader("To cite nda in publications use:")
+citEntry(
+    entry      = "article",
+    title        = "nda: an R package for Network-based Dimensionality reduction and Analysis",
+    author       = personList(person(given="Zsolt T.", family="Kosztyan", email="kzst@gtk.uni-pannon.hu"),person(given="Kurbucz T.", family="Marcell"), person(given="Attile I.", family="Katona")),
+    journal      = "Knowledge-Based Systems",
+    year         = 2022,
+    pages        = "109180",
+    volume       = "251",
+    doi          = "10.1016/j.knosys.2022.109180",
+    url          = "https://github.com/kzst/nda/",
+    textVersion  =
+    paste("Kosztyan et. al. (2022).",
+          "nda: an R package for Network-based Dimensionality reduction and Analysis")
+)

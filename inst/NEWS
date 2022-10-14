@@ -1,0 +1,38 @@
+Version 0.1.6
+
+   o fixed some bugs
+
+Version 0.1.4
+
+   o fixed some bugs
+
+   o created a full tour of nda
+
+   o build vignette by pkgdown
+
+Version 0.1.3
+
+   o fixed some bugs
+
+   o generate random block matrices
+
+
+Version 0.1.2
+
+   o fixed some bugs
+
+   o plot, biplot functions are specified
+
+   o summary, print functions are specified
+
+
+Version 0.1.1
+
+   o fixed some bugs
+
+   o added a new dataset about crimes in the USA 1994
+
+
+Version 0.1.0
+
+   o package release on GitHub.
