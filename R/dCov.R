@@ -10,31 +10,33 @@
 # Last modified: February 2023                                                #
 #-----------------------------------------------------------------------------#
 #' @export
-summary.nda <- function(object,  digits =  getOption("digits"), ...) {
-  if (!requireNamespace("stats", quietly = TRUE)) {
+
+dCov<-function(x,y=NULL){
+  if (!requireNamespace("energy", quietly = TRUE)) {
     stop(
-      "Package \"stats\" must be installed to use this function.",
+      "Package \"energy\" must be installed to use this function.",
       call. = FALSE
     )
   }
-  if ("nda" %in% class(object)){
-    communality <- object$communality
-    loadings <- object$loadings
-    uniqueness <- object$uniqueness
-    factors <- object$factors
-    scores <- object$scores
-    n.obs <- object$n.obs
-    factors <- object$factors
-    cat("\nSummary of the NDA:\n")
-    cat("\nNumber of latent variables: ",factors)
-    cat("\nNumber of observations: ",n.obs)
-    cat("\nCommunalities:\n")
-    print(communality,digits = digits, ...)
-    cat("\nFactor loadings:\n")
-    print(loadings,digits = digits, ...)
-    cat("\n\nCorrelation matrix of factor scores:\n")
-    print(stats::cor(scores),digits = digits, ...)
+  if (is.null(y)){
+    if (is.data.frame(x)|is.matrix(x)){
+      dC<-matrix(0,nrow=ncol(x),ncol=ncol(x))
+      for (i in c(1:ncol(x))){
+        for (j in c(1:ncol(x))){
+          dC[i,j]<-energy::dcov(x[,i],x[,j])
+        }
+      }
+      rownames(dC)<-colnames(x)
+      colnames(dC)<-colnames(x)
+      dCov<-dC
+      dCov
+    }else{
+      stop("Error: x must be a matrix or a dataframe!")
+      dCov<-NULL
+    }
   }else{
-    summary(object,...)
+    dCov<-energy::dcov(x,y)
+    dCov
   }
 }
+

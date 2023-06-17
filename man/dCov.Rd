@@ -1,15 +1,15 @@
-\name{dCor}
-\alias{dCor}
-\title{Calculating distance correlation of two vectors or columns of a matrix
+\name{dCov}
+\alias{dCov}
+\title{Calculating distance covariance of two vectors or columns of a matrix
 }
 
-\description{Calculating distance correlation of two vectors or columns of a matrix for Generalized Network-based Dimensionality Reduction and Analysis (GNDA).
+\description{Calculating distance covariance of two vectors or columns of a matrix for Generalized Network-based Dimensionality Reduction and Analysis (GNDA).
 
 The calculation is very slow for large matrices!
 }
 
 \usage{
-dCor(x,y=NULL)
+dCov(x,y=NULL)
 }
 \arguments{
   \item{x}{a numeric vector, a numeric matrix (in this case y=NULL), or a numeric data frame (in this case y=NULL)}
@@ -20,7 +20,7 @@ If \code{x} is a numeric vector, \code{y} must be specified. If x is a numeric m
 }
 \value{
 
-Either a distance correlation value of vectors \code{x} and \code{y}, or a distance correlation matrix of \code{x}.
+Either a distance covariance value of vectors \code{x} and \code{y}, or a distance covariance matrix of \code{x}.
 }
 \references{
 Rizzo M, Szekely G (2021). _energy: E-Statistics:
@@ -36,13 +36,13 @@ e-mail: kosztyan.zsolt@gtk.uni-pannon.hu
 }
 
 \examples{
-# Specification of distance correlation value of vectors x and y.
+# Specification of distance covariance value of vectors x and y.
 x<-rnorm(36)
 y<-rnorm(36)
-dCor(x,y)
-# Specification of distance correlaction matrix.
+dCov(x,y)
+# Specification of distance covariance matrix.
 x<-matrix(rnorm(36),nrow=6)
-dCor(x)
+dCov(x)
 }
 
 \keyword{array}

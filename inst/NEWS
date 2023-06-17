@@ -1,3 +1,21 @@
+Version 0.1.9
+
+   o fixed some bugs
+   o works on asymmetric matrices
+   o partial correlation matrices can be employed
+   o the name of the method is changed to Generalized Network-based Dimensionality Reduction and Analysis (GNDA)
+
+Version 0.1.8
+
+   o fixed some bugs
+   o works with correlation or symmetric distance matrices
+
+Version 0.1.7
+
+   o fixed some bugs
+   o feature selection for KMO/MSA
+   o feature selection for PCA/FA/NDA
+
 Version 0.1.6
 
    o fixed some bugs

@@ -1,26 +1,27 @@
 \name{plot.nda}
 \alias{plot.nda}
 \title{
-Plot function for Network-based Dimensionality Reduction and Analysis (NDA)
+Plot function for Generalized Network-based Dimensionality Reduction and Analysis (GNDA)
 }
 \description{
 Plot variable network graph
 }
 \usage{
-\method{plot}{nda}(x, cuts=0.3,...)
+\method{plot}{nda}(x, cuts=0.3, interactive=TRUE,edgescale=1.0,labeldist=-1.5,...)
 }
 \arguments{
   \item{x}{an object of class 'NDA'.}
-  \item{cuts}{minimal correlation square value for an edge in the variable network graph.}
+  \item{cuts}{minimal square correlation value for an edge in the correlation network graph (default 0.3).}
+  \item{interactive}{Plot interactive visNetwork graph or non-interactive igraph plot (default TRUE).}
+  \item{edgescale}{Proportion scale value of edge width.}
+  \item{labeldist}{Vertex label distance in non-interactive igraph plot (default value =-1.5).}
   \item{...}{other graphical parameters.}
 }
-
-\value{No return value}
 
 \author{
 Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona
 
-e-mail*: kzst@gtk.uni-pannon.hu
+e-mail*: kosztyan.zsolt@gtk.uni-pannon.hu
 }
 
 \seealso{\code{\link{biplot}}, \code{\link{summary}}, \code{\link{ndr}}.}
@@ -47,6 +48,5 @@ plot(p)
 plot(p,cuts=0.6)
 
 }
-
 \keyword{multivariate}
 \concept{control chart}

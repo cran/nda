@@ -1,16 +1,16 @@
 #-----------------------------------------------------------------------------#
 #                                                                             #
-#  NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (NDA)                  #
+#  GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA)     #
 #                                                                             #
 #  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona       #
 #              *Department of Quantitative Methods                            #
 #              University of Pannonia, Hungary                                #
-#              kzst@gtk.uni-pannon.hu                                         #
+#              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: October 2022                                                 #
+# Last modified: May 2023                                                #
 #-----------------------------------------------------------------------------#
 #' @export
-plot.nda <- function(x,cuts=0.3,...){
+plot.nda <- function(x,cuts=0.3,interactive=TRUE,edgescale=1.0,labeldist=-1.5,...){
   if ("nda" %in% class(x)){
     if (!requireNamespace("igraph", quietly = TRUE)) {
       stop(
@@ -33,22 +33,38 @@ plot.nda <- function(x,cuts=0.3,...){
     R2<-G<-nodes<-edges<-NULL
     R2<-x$R
     R2[R2<cuts]<-0
-
-    G=igraph::graph.adjacency(R2, mode = "undirected",
-                              weighted = TRUE, diag = FALSE)
+    if (isSymmetric(as.matrix(R2))){
+      G=igraph::graph.adjacency(as.matrix(R2), mode = "undirected",
+                                weighted = TRUE, diag = FALSE)
+    }else{
+      G=igraph::graph.adjacency(as.matrix(R2), mode = "directed",
+                                weighted = TRUE, diag = FALSE)
+    }
     nodes<-as.data.frame(igraph::V(G)$name)
     nodes$label<-rownames(x$R)
+    nodes$size<-igraph::evcent(G)$vector*10+5
     nodes$color<-grDevices::hsv(x$membership/max(x$membership))
     nodes[x$membership==0,"color"]<-"#000000"
-    colnames(nodes)<-c("id","title","color")
+    colnames(nodes)<-c("id","title","size","color")
     edges<-as.data.frame(igraph::as_edgelist(G))
-    edges <- data.frame(
-      from=edges$V1,
-      to=edges$V2,
-      smooth=c(FALSE),
-      width=igraph::E(G)$weight,
-      color="#5080b1"
-    )
+    if (igraph::is.directed(G)){
+      edges <- data.frame(
+        from=edges$V1,
+        to=edges$V2,
+        arrows=c("middle"),
+        smooth=c(FALSE),
+        width=(igraph::E(G)$weight)*edgescale,
+        color="#5080b1"
+      )
+    }else{
+      edges <- data.frame(
+        from=edges$V1,
+        to=edges$V2,
+        smooth=c(FALSE),
+        width=(igraph::E(G)$weight)*edgescale,
+        color="#5080b1"
+      )
+    }
 
     nw <-
       visNetwork::visIgraphLayout(
@@ -66,7 +82,16 @@ plot.nda <- function(x,cuts=0.3,...){
                   font=list(face="calibri")),layout = "layout_nicely",
                   physics = TRUE, type="full"
       )
-    nw
+
+    if (interactive==FALSE){
+      g <- igraph::graph_from_data_frame(edges,vertices=nodes,
+                                         directed = igraph::is.directed(G))
+      igraph::E(g)$weight<-igraph::E(G)$weight
+      igraph::E(g)$size<-igraph::E(G)$weight
+      igraph::plot.igraph(g, vertex.label.dist = labeldist,vertex.size=nodes$size,edge.width=(igraph::E(g)$size*5+1)*edgescale,edge.arrow.size=0.2)
+    }else{
+      nw
+    }
   }else{
     plot(x,...)
   }

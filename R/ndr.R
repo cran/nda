@@ -1,22 +1,21 @@
 #-----------------------------------------------------------------------------#
 #                                                                             #
-#  NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (NDA)                  #
+#  GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA)     #
 #                                                                             #
 #  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona       #
 #              *Department of Quantitative Methods                            #
 #              University of Pannonia, Hungary                                #
-#              kzst@gtk.uni-pannon.hu                                         #
+#              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: October 2022                                                 #
+# Last modified: May 2023                                                #
 #-----------------------------------------------------------------------------#
-
 #' @export
 
-ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
+ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
               null_modell_type=4,mod_mode=6,min_evalue=0,
               min_communality=0,com_communalities=0,use_rotation=FALSE){
 
-
+  cl<-match.call()
   if (!requireNamespace("energy", quietly = TRUE)) {
     stop(
       "Package \"energy\" must be installed to use this function.",
@@ -35,32 +34,68 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
       call. = FALSE
     )
   }
-  if (!requireNamespace("leidenAlg", quietly = TRUE)) {
-    stop(
-      "Package \"leidenAlg\" must be installed to use this function.",
-      call. = FALSE
-    )
-  }
   if (!requireNamespace("stats", quietly = TRUE)) {
     stop(
       "Package \"stats\" must be installed to use this function.",
       call. = FALSE
     )
   }
-  DATA<-data
-  X<-data
+  if (!requireNamespace("ppcor", quietly = TRUE)) {
+    stop(
+      "Package \"ppcor\" must be installed to use this function.",
+      call. = FALSE
+    )
+  }
+  DATA<-r
+  X<-r
 
   # Prepare correlation matrix
 
-  COR=switch(
-    cor_method,
-    "1"=stats::cor(X),
-    "2"=stats::cor(X,method="spearman"),
-    "3"=stats::cor(X,method="kendall"),
-    "4"=dCor(X)
-  )
+  if (covar==FALSE){
+    if (cor_type==1){ # Bivariate correlations
+      COR=switch(
+        cor_method,
+        "1"=stats::cor(X),
+        "2"=stats::cor(X,method="spearman"),
+        "3"=stats::cor(X,method="kendall"),
+        "4"=dCor(X)
+      )
+    }else{
+      if (cor_type==2){ # Partial correlations
+        COR=switch(
+          cor_method,
+          "1"=ppcor::pcor(X)$estimate,
+          "2"=ppcor::pcor(X,method="spearman")$estimate,
+          "3"=ppcor::pcor(X,method="kendall")$estimate,
+          "4"=pdCor(X)
+        )
+      }else{ # Semi-partial correlations
+        COR=switch(
+          cor_method,
+          "1"=ppcor::spcor(X)$estimate,
+          "2"=ppcor::spcor(X,method="spearman")$estimate,
+          "3"=ppcor::spcor(X,method="kendall")$estimate,
+          "4"=spdCor(X)
+        )
+      }
+    }
+  }else{
+    COR<-X
+  }
   COR[is.na(COR)]<-0
+  issymm<-isSymmetric(as.matrix(COR))
+  if (issymm==FALSE){
+    if (mod_mode<4){
+      stop(
+        "If correlation/simmilarity matrix is non-symmetric only InfoMap/Walktrap modularities can be used.",
+        call. = FALSE
+      )
+    }
+  }
   R<-COR^2
+  R<-as.data.frame(R)
+  colnames(R)<-colnames(r)
+  rownames(R)<-colnames(r)
   remove(COR)
 
   R<-R-diag(nrow(R))
@@ -89,27 +124,46 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
     "4"=R
   )
   MTX[MTX<0]<-0
-
   cor_method<-1 # Non-linear correlation only used for the correlation graph
-  modular=switch(
-    mod_mode,
-    "1"=igraph::cluster_louvain(igraph::graph.adjacency(MTX,
-              mode = "undirected", weighted = TRUE, diag = FALSE)),
-    "2"=igraph::cluster_fast_greedy(igraph::graph.adjacency(MTX,
-              mode = "undirected", weighted = TRUE, diag = FALSE)),
-    "3"=igraph::cluster_leading_eigen(igraph::graph.adjacency(MTX,
-              mode = "undirected", weighted = TRUE, diag = FALSE)),
-    "4"=igraph::cluster_infomap(igraph::graph.adjacency(MTX,
-              mode = "undirected", weighted = TRUE, diag = FALSE)),
-    "5"=igraph::cluster_walktrap(igraph::graph.adjacency(MTX,
-              mode = "undirected", weighted = TRUE, diag = FALSE)),
-    "6"=leidenAlg::leiden.community(igraph::graph.adjacency(MTX,
-              mode = "undirected", weighted = TRUE, diag = FALSE))
-  )
+  if (issymm==TRUE) {
+    modular=switch(
+      mod_mode,
+      "1"=igraph::cluster_louvain(igraph::graph.adjacency(as.matrix(MTX),
+                                                          mode = "undirected", weighted = TRUE, diag = FALSE)),
+      "2"=igraph::cluster_fast_greedy(igraph::graph.adjacency(as.matrix(MTX),
+                                                              mode = "undirected", weighted = TRUE, diag = FALSE)),
+      "3"=igraph::cluster_leading_eigen(igraph::graph.adjacency(as.matrix(MTX),
+                                                                mode = "undirected", weighted = TRUE, diag = FALSE)),
+      "4"=igraph::cluster_infomap(igraph::graph.adjacency(as.matrix(MTX),
+                                                          mode = "undirected", weighted = TRUE, diag = FALSE)),
+      "5"=igraph::cluster_walktrap(igraph::graph.adjacency(as.matrix(MTX),
+                                                           mode = "undirected", weighted = TRUE, diag = FALSE)),
+      "6"=igraph::cluster_leiden(igraph::graph.adjacency(as.matrix(MTX),
+                                                              mode = "undirected", weighted = TRUE, diag = FALSE),
+                                 objective_function = "modularity")
+    )
+  }else{
+    modular=switch(
+      mod_mode,
+      "1"=igraph::cluster_louvain(igraph::graph.adjacency(MTX,
+                                                          mode = "directed", weighted = TRUE, diag = FALSE)),
+      "2"=igraph::cluster_fast_greedy(igraph::graph.adjacency(as.matrix(MTX),
+                                                              mode = "directed", weighted = TRUE, diag = FALSE)),
+      "3"=igraph::cluster_leading_eigen(igraph::graph.adjacency(as.matrix(MTX),
+                                                                mode = "directed", weighted = TRUE, diag = FALSE)),
+      "4"=igraph::cluster_infomap(igraph::graph.adjacency(as.matrix(MTX),
+                                                          mode = "directed", weighted = TRUE, diag = FALSE)),
+      "5"=igraph::cluster_walktrap(igraph::graph.adjacency(as.matrix(MTX),
+                                                           mode = "directed", weighted = TRUE, diag = FALSE)),
+      "6"=igraph::cluster_leiden(igraph::graph.adjacency(as.matrix(MTX),
+                                                              mode = "directed", weighted = TRUE, diag = FALSE),
+                                 objective_function = "modularity")
+    )
+  }
 
   S<-as.numeric(modular$membership)
 
-  igraph::sizes(modular)
+  # igraph::sizes(modular)
 
   for (i in 1: max(S)){
     if (nrow(as.matrix(coords[S==i]))<min_comm){
@@ -126,36 +180,41 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
     M<-M[-1]
   }
 
-  data<-X;
-  is.na(data)<-sapply(data, is.infinite)
-  data[is.na(data)]<-0
-
+  if (covar==FALSE){
+    r<-X;
+    is.na(r)<-sapply(r, is.infinite)
+    r[is.na(r)]<-0
+  }
   # Feature selection (1) - Drop peripheric items
 
   Coords<-c(1:nrow(as.matrix(S)))
-  L<-matrix(0,nrow(DATA),nrow(as.matrix(M)))
+  L<-matrix(0,nrow(DATA),nrow(as.matrix(M))) # Factor scores
 
   EVCs<-list()
   DATAs<-list()
-
   for (i in 1:nrow(as.matrix(M))){
     Coordsi<-Coords[(S==M[i])&(coords==1)]
+    if (issymm==TRUE) {
     EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
-      R[Coordsi,Coordsi], mode = "undirected",
+      as.matrix(R[Coordsi,Coordsi]), mode = "undirected",
         weighted = TRUE, diag = FALSE))$vector)
+    }else{
+      EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
+        as.matrix(R[Coordsi,Coordsi]), mode = "directed",
+        weighted = TRUE, diag = FALSE))$vector)
+    }
     if ((nrow(as.matrix(EVC[EVC>min_evalue]))>2)&(nrow(EVC)>2)){
-      L[,i]<-as.matrix(rowSums(data[,
+      L[,i]<-as.matrix(rowSums(r[,
         Coordsi[EVC>min_evalue]] * EVC[EVC>min_evalue]))
       coords[Coordsi[EVC<=min_evalue]]<-0
       coords[Coordsi[EVC<=min_evalue]]<-0
       S[Coordsi[EVC<=min_evalue]]<-0
     }else{
-      L[,i]<-as.matrix(rowSums(data[,Coordsi] * EVC))
+      L[,i]<-as.matrix(rowSums(r[,Coordsi] * EVC))
     }
     EVCs[[i]]=EVC[EVC>min_evalue]
-    DATAs[[i]]=data[,S==M[i]];
+    DATAs[[i]]=r[,S==M[i]];
   }
-
   if (ncol(L)>1 && use_rotation==TRUE){
     L<-psych::principal(L,nfactors = dim(L)[2])$scores
   }else{
@@ -169,13 +228,24 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
     "3"=stats::cor(L,method="kendall"),
     "4"=dCor(L)
   )
-  LOADING=switch(
-    cor_method,
-    "1"=stats::cor(data[,S>0],L),
-    "2"=stats::cor(data[,S>0],L,method="spearman"),
-    "3"=stats::cor(data[,S>0],L,method="kendall"),
-    "4"=dCor(data[,S>0],L)
-  )
+  CoordsS<-Coords[S!=0]
+  CoordsC<-c(1:nrow(as.matrix(CoordsS)))
+  if (covar==FALSE){
+    LOADING=switch(
+      cor_method,
+      "1"=stats::cor(r[,S>0],L),
+      "2"=stats::cor(r[,S>0],L,method="spearman"),
+      "3"=stats::cor(r[,S>0],L,method="kendall"),
+      "4"=dCor(r[,S>0],L)
+    )
+  }else{
+    LOADING<-matrix(0,length(S),nrow(as.matrix(M))) # Factor scores
+    for (i in 1:nrow(as.matrix(M))){
+      LOADING[Coords[S==i],i]<-EVCs[[i]]
+    }
+    LOADING<-as.matrix(LOADING[Coords[S!=0],])
+    rownames(LOADING)<-names(as.data.frame(r))[S>0]
+  }
   COMMUNALITY<-t(apply(LOADING^2,1,max))
 
   # Feature selection (2) - Drop items with low communality
@@ -203,10 +273,10 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
         EVC<-EVCs[[i]]
         EVC<-EVC[COM>min_communality]
         EVCs[[i]]<-EVC
-        L[,i]<-as.matrix(rowSums(data[,Coordsi[COM>min_communality]] * EVC))
+        L[,i]<-as.matrix(rowSums(r[,Coordsi[COM>min_communality]] * EVC))
       }else{
         EVC<-EVCs[[i]]
-        L[,i]<-as.matrix(rowSums(data[,Coordsi] * EVC))
+        L[,i]<-as.matrix(rowSums(r[,Coordsi] * EVC))
       }
     }
     if (ncol(L)>1 && use_rotation==TRUE){
@@ -221,13 +291,22 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
       "3"=stats::cor(L,method="kendall"),
       "4"=dCor(L)
     )
-    LOADING=switch(
-      cor_method,
-      "1"=stats::cor(data[,S>0],L),
-      "2"=stats::cor(data[,S>0],L,method="spearman"),
-      "3"=stats::cor(data[,S>0],L,method="kendall"),
-      "4"=dCor(data[,S>0],L)
-    )
+    if (covar==FALSE){
+      LOADING=switch(
+        cor_method,
+        "1"=stats::cor(r[,S>0],L),
+        "2"=stats::cor(r[,S>0],L,method="spearman"),
+        "3"=stats::cor(r[,S>0],L,method="kendall"),
+        "4"=dCor(r[,S>0],L)
+      )
+    }else{
+      LOADING<-matrix(0,length(S),nrow(as.matrix(M))) # Factor scores
+      for (i in 1:nrow(as.matrix(M))){
+        LOADING[Coords[S==i],i]<-EVCs[[i]]
+      }
+      LOADING<-as.matrix(LOADING[Coords[S!=0],])
+      rownames(LOADING)<-names(as.data.frame(r))[S>0]
+    }
     COMMUNALITY<-t(apply(LOADING^2,1,max))
   }
 
@@ -270,14 +349,20 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
     }
     for (i in 1:nrow(as.matrix(M))){
       Coordsi=Coords[(S==M[i])&(coords==1)]
-      EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
-        R[Coordsi,Coordsi], mode = "undirected",
+      if (issymm==TRUE) {
+        EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
+         as.matrix(R[Coordsi,Coordsi]), mode = "undirected",
           weighted = TRUE, diag = FALSE))$vector)
+      }else{
+        EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
+         as.matrix(R[Coordsi,Coordsi]), mode = "directed",
+          weighted = TRUE, diag = FALSE))$vector)
+      }
       EVCs[[i]]<-EVC
       result<-NA
-      try(result <- as.matrix(rowSums(data[,Coordsi] %*% EVC)),silent=TRUE)
+      try(result <- as.matrix(rowSums(r[,Coordsi] %*% EVC)),silent=TRUE)
       if (is.null(nrow(is.nan(result)))){
-        try(result <- as.matrix(rowSums(data[,Coordsi] * EVC)),silent=TRUE)
+        try(result <- as.matrix(rowSums(r[,Coordsi] * EVC)),silent=TRUE)
       }
       L[,i]<-result
     }
@@ -293,13 +378,22 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
       "3"=stats::cor(L,method="kendall"),
       "4"=dCor(L)
     )
-    LOADING=switch(
-      cor_method,
-      "1"=stats::cor(data[,S>0],L),
-      "2"=stats::cor(data[,S>0],L,method="spearman"),
-      "3"=stats::cor(data[,S>0],L,method="kendall"),
-      "4"=dCor(data[,S>0],L)
-    )
+    if (covar==FALSE){
+      LOADING=switch(
+        cor_method,
+        "1"=stats::cor(r[,S>0],L),
+        "2"=stats::cor(r[,S>0],L,method="spearman"),
+        "3"=stats::cor(r[,S>0],L,method="kendall"),
+        "4"=dCor(r[,S>0],L)
+      )
+    }else{
+      LOADING<-matrix(0,length(S),nrow(as.matrix(M))) # Factor scores
+      for (i in 1:nrow(as.matrix(M))){
+        LOADING[Coords[S==i],i]<-EVCs[[i]]
+      }
+      LOADING<-as.matrix(LOADING[Coords[S!=0],])
+      rownames(LOADING)<-names(as.data.frame(r))[S>0]
+    }
     COMMUNALITY<-t(apply(LOADING^2,1,max))
   }
 
@@ -309,13 +403,16 @@ ndr<-function(data,cor_method=1,min_R=0,min_comm=2,Gamma=1,
   colnames(P$loadings)<-paste("NDA",1:nrow(as.matrix(M)),sep = "")
   P$uniqueness<-1-COMMUNALITY
   P$factors<-nrow(as.matrix(M))
-  P$scores<-L
-  rownames(P$scores)<-rownames(DATA)
-  colnames(P$scores)<-paste("NDA",1:nrow(as.matrix(M)),sep = "")
+  if (covar==FALSE){
+    P$scores<-L
+    rownames(P$scores)<-rownames(DATA)
+    colnames(P$scores)<-paste("NDA",1:nrow(as.matrix(M)),sep = "")
+  }
   P$n.obs<-nrow(DATA)
   P$R<-R
   P$membership<-S
   P$fn<-"NDA"
+  P$Call<-cl
   class(P) <- "nda"
   return(P)
 }
