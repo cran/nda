@@ -2,16 +2,19 @@
 #                                                                             #
 #  GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA)     #
 #                                                                             #
-#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona       #
+#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona,      #
+#              Zahid Khan                                                     #
 #              *Department of Quantitative Methods                            #
 #              University of Pannonia, Hungary                                #
 #              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: May 2023                                                #
+# Last modified: February 2024                                                #
 #-----------------------------------------------------------------------------#
+###### PLOT FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (NDA) #####
 #' @export
-plot.nda <- function(x,cuts=0.3,interactive=TRUE,edgescale=1.0,labeldist=-1.5,...){
-  if ("nda" %in% class(x)){
+plot.nda <- function(x,cuts=0.3,interactive=TRUE,edgescale=1.0,labeldist=-1.5,
+                     show_weights=FALSE,...){
+  if (methods::is(x,"nda")){
     if (!requireNamespace("igraph", quietly = TRUE)) {
       stop(
         "Package \"igraph\" must be installed to use this function.",
@@ -47,32 +50,25 @@ plot.nda <- function(x,cuts=0.3,interactive=TRUE,edgescale=1.0,labeldist=-1.5,..
     nodes[x$membership==0,"color"]<-"#000000"
     colnames(nodes)<-c("id","title","size","color")
     edges<-as.data.frame(igraph::as_edgelist(G))
-    if (igraph::is.directed(G)){
-      edges <- data.frame(
-        from=edges$V1,
-        to=edges$V2,
-        arrows=c("middle"),
-        smooth=c(FALSE),
-        width=(igraph::E(G)$weight)*edgescale,
-        color="#5080b1"
-      )
-    }else{
-      edges <- data.frame(
-        from=edges$V1,
-        to=edges$V2,
-        smooth=c(FALSE),
-        width=(igraph::E(G)$weight)*edgescale,
-        color="#5080b1"
-      )
-    }
+    edges <- data.frame(
+      from=edges$V1,
+      to=edges$V2,
+      arrows=ifelse(igraph::is.directed(G),c("middle"),""),
+      smooth=c(FALSE),
+      label=ifelse(show_weights==TRUE,paste(round(igraph::E(G)$weight,2)),""),
+      width=(igraph::E(G)$weight)*edgescale,
+      color="#5080b1"
+    )
 
     nw <-
       visNetwork::visIgraphLayout(
         visNetwork::visNodes(
           visNetwork::visInteraction(
             visNetwork::visOptions(
+              visNetwork::visEdges(
               visNetwork::visNetwork(
                 nodes, edges, height = "1000px", width = "100%"),
+                 font = list(size = 6)),
                   highlightNearest = TRUE, selectedBy = "label"),
                   dragNodes = TRUE,
                   dragView = TRUE,

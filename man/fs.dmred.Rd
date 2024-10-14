@@ -29,7 +29,7 @@ This function also drops so-called common indicators, which correlate highly wit
 \item{dropped_low}{Numeric data frame or numeric matrix. Set of indicators (i.e. variables), which are dropped by their low communalities. This value is NULL if a correlation matrix is used as an input or there is no dropped indicator.}
 \item{dropped_com}{Numeric data frame or numeric matrix. Set of dropped common indicators (i.e. common variables). This value is NULL if a correlation matrix is used as an input or there is no dropped indicator.}
 \item{remain_DF}{Numeric data frame or numeric matrix. Set of retained indicators}
-\item{...}{Other outputs came from \code{\link{principal}}, \code{\link{fa}}, or in \code{\link{ndr}}}
+\item{...}{Other outputs came from}
 }
 
 \references{
@@ -42,7 +42,7 @@ Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona
 e-mail*: kosztyan.zsolt@gtk.uni-pannon.hu
 }
 
-\seealso{\code{\link{principal}},\code{\link{fa}},\code{\link{ndr}}.}
+\seealso{\code{\link[psych:principal]{psych::principal}}, \code{\link[psych:fa]{psych::fa}}, \code{\link{ndr}}.}
 
 \examples{
 

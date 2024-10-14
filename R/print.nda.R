@@ -10,42 +10,37 @@
 #                                                                             #
 # Last modified: February 2024                                                #
 #-----------------------------------------------------------------------------#
-######## MATRIX-BASED DISTANCE CORRELATION ########
+# PRINT FUNCTION FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (NDA)#
 #' @export
-dCor<-function(x,y=NULL){
-  if (!requireNamespace("energy", quietly = TRUE)) {
+print.nda <- function(x,  digits =  getOption("digits"), ...) {
+  if (!requireNamespace("stats", quietly = TRUE)) {
     stop(
-      "Package \"energy\" must be installed to use this function.",
+      "Package \"stats\" must be installed to use this function.",
       call. = FALSE
     )
   }
-  if (is.data.frame(x)|is.matrix(x)){
-    if (min(dim(x))>1){
-      if (!is.null(y)){
-        warning("x is a matrix or a data.frame with at least two columns, y is neglected.")
-      }
-      y<-NULL
-    }
-  }
-  if (is.null(y)){
-    if (is.data.frame(x)|is.matrix(x)){
-      dC<-matrix(0,nrow=ncol(x),ncol=ncol(x))
-      for (i in c(1:ncol(x))){
-        for (j in c(1:ncol(x))){
-          dC[i,j]<-energy::dcor(x[,i],x[,j])
-        }
-      }
-      rownames(dC)<-colnames(x)
-      colnames(dC)<-colnames(x)
-      dCor<-dC
-      dCor
-    }else{
-      dCor<-NULL
-      stop("Error: x must be a matrix or a dataframe!")
+  if (methods::is(x,"nda")){
+    communality <- x$communality
+    loadings <- x$loadings
+    uniqueness <- x$uniqueness
+    factors <- x$factors
+    scores <- x$scores
+    n.obs <- x$n.obs
+    factors <- x$factors
+    cat("\nPrint of the NDA:\n")
+    cat("\nNumber of latent variables: ",factors)
+    cat("\nNumber of observations: ",n.obs)
+    cat("\nCommunalities:\n")
+    print(communality,digits = digits, ...)
+    cat("\nFactor loadings:\n")
+    print(loadings,digits = digits, ...)
+    if (!is.null(scores)){
+      cat("\nFactor scores:\n")
+      print(scores,digits = digits, ...)
+      cat("\n\nCorrelation matrix of factor scores:\n")
+      print(stats::cor(scores),digits = digits, ...)
     }
   }else{
-    dCor<-energy::dcor(x,y)
-    dCor
+    print(x,...)
   }
 }
-

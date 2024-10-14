@@ -2,20 +2,21 @@
 #                                                                             #
 #  GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA)     #
 #                                                                             #
-#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona       #
+#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona,      #
+#              Zahid Khan                                                     #
 #              *Department of Quantitative Methods                            #
 #              University of Pannonia, Hungary                                #
 #              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: September 2023                                               #
+# Last modified: February 2024                                                #
 #-----------------------------------------------------------------------------#
-
+######### Normalize entire data, row, or column #######
 #' @export
 normalize <- function(x,type="all")
 {
   results<-NULL
-  if (("data.frame" %in% class(x))|("matrix" %in% class(x))|
-      ("array" %in% class(x))){
+  if ((is.data.frame(x))|(is.matrix(x))|
+      (is.array(x))){
     results<-((x - min(x)) / (max(x) - min(x)))
     if ("row" %in% type){
       for (i in 1:nrow(x)){

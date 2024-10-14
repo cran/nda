@@ -2,15 +2,16 @@
 #                                                                             #
 #  GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA)     #
 #                                                                             #
-#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona       #
+#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona,      #
+#              Zahid Khan                                                     #
 #              *Department of Quantitative Methods                            #
 #              University of Pannonia, Hungary                                #
 #              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: February 2023                                                #
+# Last modified: February 2024                                                #
 #-----------------------------------------------------------------------------#
+######## MATRIX-BASED DISTANCE SEMI-PARTIAL CORRELATION ########
 #' @export
-
 spdCor<-function(x){
   if (!requireNamespace("energy", quietly = TRUE)) {
     stop(
@@ -46,7 +47,10 @@ spdCor<-function(x){
     warning("The inverse of variance-covariance matrix is calculated using Moore-Penrose generalized matrix invers due to its determinant of zero.")
     icvx <- MASS::ginv(cvx)
   }else
-    icvx <- solve(cvx)
+    icvx <- Rfast::spdinv(cvx)
+
+  rownames(icvx)<-rownames(cvx)
+  colnames(icvx)<-colnames(cvx)
 
   # semi-partial correlation
   spcor <- -stats::cov2cor(icvx)/sqrt(diag(cvx))/sqrt(abs(diag(icvx)-t(t(icvx^2)/diag(icvx))))

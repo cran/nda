@@ -2,13 +2,15 @@
 #                                                                             #
 #  GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA)     #
 #                                                                             #
-#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona       #
+#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona,      #
+#              Zahid Khan                                                     #
 #              *Department of Quantitative Methods                            #
 #              University of Pannonia, Hungary                                #
 #              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: February 2023                                                #
+# Last modified: February 2024                                                #
 #-----------------------------------------------------------------------------#
+#SUMMARY FUNCTION FOR NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (NDA)#
 #' @export
 summary.nda <- function(object,  digits =  getOption("digits"), ...) {
   if (!requireNamespace("stats", quietly = TRUE)) {
@@ -17,7 +19,7 @@ summary.nda <- function(object,  digits =  getOption("digits"), ...) {
       call. = FALSE
     )
   }
-  if ("nda" %in% class(object)){
+  if (methods::is(object,"nda")){
     communality <- object$communality
     loadings <- object$loadings
     uniqueness <- object$uniqueness
@@ -25,17 +27,20 @@ summary.nda <- function(object,  digits =  getOption("digits"), ...) {
     scores <- object$scores
     n.obs <- object$n.obs
     factors <- object$factors
-    cat("\nSummary of the NDA:\n")
-    cat("\nNumber of latent variables: ",factors)
-    cat("\nNumber of observations: ",n.obs)
-    cat("\nCommunalities:\n")
-    print(communality,digits = digits, ...)
-    cat("\nFactor loadings:\n")
-    print(loadings,digits = digits, ...)
     if (!is.null(scores)){
-      cat("\n\nCorrelation matrix of factor scores:\n")
-      print(stats::cor(scores),digits = digits, ...)
+      results<-list(cummunality = communality, loadings = loadings,
+                    uniqueness = uniqueness,
+                    factors = factors,
+                    scores = scores,
+                    n.obs = n.obs)
+    }else{
+      results<-list(cummunality = communality, loadings = loadings,
+                    uniqueness = uniqueness,
+                    factors = factors,
+                    n.obs = n.obs)
     }
+    return(results)
+    print.nda(object)
   }else{
     summary(object,...)
   }

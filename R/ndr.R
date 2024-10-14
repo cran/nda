@@ -2,18 +2,20 @@
 #                                                                             #
 #  GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA)     #
 #                                                                             #
-#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona       #
+#  Written by: Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona,      #
+#              Zahid Khan                                                     #
 #              *Department of Quantitative Methods                            #
 #              University of Pannonia, Hungary                                #
 #              kosztyan.zsolt@gtk.uni-pannon.hu                               #
 #                                                                             #
-# Last modified: May 2023                                                #
+# Last modified: February 2024                                                #
 #-----------------------------------------------------------------------------#
+#### GENERALIZED NETWORK-BASED DIMENSIONALITY REDUCTION AND ANALYSIS (GNDA) ###
 #' @export
-
 ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
               null_modell_type=4,mod_mode=6,min_evalue=0,
-              min_communality=0,com_communalities=0,use_rotation=FALSE){
+              min_communality=0,com_communalities=0,use_rotation=FALSE,
+              rotation="oblimin"){
 
   cl<-match.call()
   if (!requireNamespace("energy", quietly = TRUE)) {
@@ -43,6 +45,12 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
   if (!requireNamespace("ppcor", quietly = TRUE)) {
     stop(
       "Package \"ppcor\" must be installed to use this function.",
+      call. = FALSE
+    )
+  }
+  if (!requireNamespace("leidenAlg", quietly = TRUE)) {
+    stop(
+      "Package \"leidenAlg\" must be installed to use this function.",
       call. = FALSE
     )
   }
@@ -84,14 +92,7 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
   }
   COR[is.na(COR)]<-0
   issymm<-isSymmetric(as.matrix(COR))
-  #if (issymm==FALSE){
-    #if (mod_mode<4){
-    #  stop(
-    #    "If correlation/simmilarity matrix is non-symmetric only InfoMap/Walktrap modularities can be used.",
-    #    call. = FALSE
-    #  )
-    #}
-  #}
+
   R<-COR^2
   R<-as.data.frame(R)
   colnames(R)<-colnames(r)
@@ -128,36 +129,34 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
   if (issymm==TRUE) {
     modular=switch(
       mod_mode,
-      "1"=igraph::cluster_louvain(igraph::graph.adjacency(as.matrix(MTX),
+      "1"=igraph::cluster_louvain(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
                                                           mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "2"=igraph::cluster_fast_greedy(igraph::graph.adjacency(as.matrix(MTX),
+      "2"=igraph::cluster_fast_greedy(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
                                                               mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "3"=igraph::cluster_leading_eigen(igraph::graph.adjacency(as.matrix(MTX),
+      "3"=igraph::cluster_leading_eigen(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
                                                                 mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "4"=igraph::cluster_infomap(igraph::graph.adjacency(as.matrix(MTX),
+      "4"=igraph::cluster_infomap(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
                                                           mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "5"=igraph::cluster_walktrap(igraph::graph.adjacency(as.matrix(MTX),
+      "5"=igraph::cluster_walktrap(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
                                                            mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "6"=igraph::cluster_leiden(igraph::graph.adjacency(as.matrix(MTX),
-                                                              mode = "undirected", weighted = TRUE, diag = FALSE),
-                                 objective_function = "modularity")
+      "6"=leidenAlg::leiden.community(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
+                                                              mode = "directed", weighted = TRUE, diag = FALSE))
     )
   }else{
     modular=switch(
       mod_mode,
-      "1"=igraph::cluster_louvain(igraph::graph.adjacency(MTX,
-                                                          mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "2"=igraph::cluster_fast_greedy(igraph::graph.adjacency(as.matrix(MTX),
-                                                              mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "3"=igraph::cluster_leading_eigen(igraph::graph.adjacency(as.matrix(MTX),
-                                                                mode = "undirected", weighted = TRUE, diag = FALSE)),
-      "4"=igraph::cluster_infomap(igraph::graph.adjacency(as.matrix(MTX),
+      "1"=igraph::cluster_louvain(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
+                                                          mode = "max", weighted = TRUE, diag = FALSE)),
+      "2"=igraph::cluster_fast_greedy(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
+                                                              mode = "max", weighted = TRUE, diag = FALSE)),
+      "3"=igraph::cluster_leading_eigen(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
+                                                                mode = "max", weighted = TRUE, diag = FALSE)),
+      "4"=igraph::cluster_infomap(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
                                                           mode = "directed", weighted = TRUE, diag = FALSE)),
-      "5"=igraph::cluster_walktrap(igraph::graph.adjacency(as.matrix(MTX),
+      "5"=igraph::cluster_walktrap(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
                                                            mode = "directed", weighted = TRUE, diag = FALSE)),
-      "6"=igraph::cluster_leiden(igraph::graph.adjacency(as.matrix(MTX),
-                                                              mode = "undirected", weighted = TRUE, diag = FALSE),
-                                 objective_function = "modularity")
+      "6"=leidenAlg::leiden.community(igraph::graph_from_adjacency_matrix(as.matrix(MTX),
+                                                                      mode = "directed", weighted = TRUE, diag = FALSE))
     )
   }
 
@@ -176,6 +175,14 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
   # Estimate latent variables
 
   M<-sort(unique(S))
+  if (min(M)>0)
+  {
+    M2=min(M):(length(M))
+  }else{
+    M2=min(M):(length(M)-1)
+  }
+  S<-M2[match(S,M)]
+  M<-M2
   if (M[1]==0){
     M<-M[-1]
   }
@@ -186,7 +193,6 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
     r[is.na(r)]<-0
   }
   # Feature selection (1) - Drop peripheric items
-
   Coords<-c(1:nrow(as.matrix(S)))
   L<-matrix(0,nrow(DATA),nrow(as.matrix(M))) # Factor scores
 
@@ -195,17 +201,17 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
   for (i in 1:nrow(as.matrix(M))){
     Coordsi<-Coords[(S==M[i])&(coords==1)]
     if (issymm==TRUE) {
-    EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
-      as.matrix(R[Coordsi,Coordsi]), mode = "undirected",
+      EVC<-as.matrix(igraph::eigen_centrality(igraph::graph_from_adjacency_matrix(
+        as.matrix(R[Coordsi,Coordsi]), mode = "undirected",
         weighted = TRUE, diag = FALSE))$vector)
     }else{
-      EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
+      EVC<-as.matrix(igraph::eigen_centrality(igraph::graph_from_adjacency_matrix(
         as.matrix(R[Coordsi,Coordsi]), mode = "directed",
         weighted = TRUE, diag = FALSE))$vector)
     }
     if ((nrow(as.matrix(EVC[EVC>min_evalue]))>2)&(nrow(EVC)>2)){
       L[,i]<-as.matrix(rowSums(r[,
-        Coordsi[EVC>min_evalue]] * EVC[EVC>min_evalue]))
+                                 Coordsi[EVC>min_evalue]] * EVC[EVC>min_evalue]))
       coords[Coordsi[EVC<=min_evalue]]<-0
       coords[Coordsi[EVC<=min_evalue]]<-0
       S[Coordsi[EVC<=min_evalue]]<-0
@@ -216,7 +222,8 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
     DATAs[[i]]=r[,S==M[i]];
   }
   if (ncol(L)>1 && use_rotation==TRUE){
-    L<-psych::principal(L,nfactors = dim(L)[2])$scores
+    L<-psych::principal(L,nfactors = dim(L)[2],
+                        rotate = rotation)$scores
   }else{
     L<-scale(L)
   }
@@ -280,7 +287,8 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
       }
     }
     if (ncol(L)>1 && use_rotation==TRUE){
-      L<-psych::principal(L,nfactors = dim(L)[2])$scores
+      L<-psych::principal(L,nfactors = dim(L)[2],
+                          rotate = rotation)$scores
     }else{
       L<-scale(L)
     }
@@ -350,11 +358,11 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
     for (i in 1:nrow(as.matrix(M))){
       Coordsi=Coords[(S==M[i])&(coords==1)]
       if (issymm==TRUE) {
-        EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
+        EVC<-as.matrix(igraph::eigen_centrality(igraph::graph_from_adjacency_matrix(
          as.matrix(R[Coordsi,Coordsi]), mode = "undirected",
           weighted = TRUE, diag = FALSE))$vector)
       }else{
-        EVC<-as.matrix(igraph::eigen_centrality(igraph::graph.adjacency(
+        EVC<-as.matrix(igraph::eigen_centrality(igraph::graph_from_adjacency_matrix(
          as.matrix(R[Coordsi,Coordsi]), mode = "directed",
           weighted = TRUE, diag = FALSE))$vector)
       }
@@ -367,7 +375,8 @@ ndr<-function(r,covar=FALSE,cor_method=1,cor_type=1,min_R=0,min_comm=2,Gamma=1,
       L[,i]<-result
     }
     if (ncol(L)>1 && use_rotation==TRUE){
-      L<-psych::principal(L,nfactors = dim(L)[2])$scores
+      L<-psych::principal(L,nfactors = dim(L)[2],
+                          rotate = rotation)$scores
     }else{
       L<-scale(L)
     }
