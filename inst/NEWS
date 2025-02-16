@@ -1,3 +1,27 @@
+Version 0.2.4
+
+   o employing several target performance measure
+
+Version 0.2.3
+
+   o calculateing predictions
+
+Version 0.2.2
+
+   o considering latent-dependent and latent-independent variables
+
+Version 0.2.1
+
+   o considering direct and indirect connections
+
+Version 0.2.0
+
+   o implemented weighted regression model for supervised learning
+
+Version 0.1.16
+
+   o fixed some bugs
+
 Version 0.1.15
 
    o fixed some bugs

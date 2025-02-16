@@ -60,4 +60,3 @@ q<-ndr(SIM,covar = TRUE)
 plot(q,interactive = FALSE)
 }
 \keyword{multivariate}
-\concept{control chart}
