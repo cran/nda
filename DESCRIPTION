@@ -1,7 +1,7 @@
 Package: nda
 Type: Package
 Title: Generalized Network-Based Dimensionality Reduction and Analysis
-Version: 0.2.4
+Version: 0.2.5
 Authors@R: c(
     person("Zsolt T.", "Kosztyan", email="kosztyan.zsolt@gtk.uni-pannon.hu", role = c("aut", "cre")),
     person("Marcell T.", "Kurbucz", email="kurbuczmarcell@gmail.com", role = c("aut")),
@@ -19,10 +19,10 @@ Imports: energy, psych, stats, igraph, Matrix, methods, Rfast, MASS,
         mco, ppcor, lm.beta, leidenAlg, Metrics, visNetwork
 RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2025-02-16 11:44:55 UTC; mac
+Packaged: 2026-03-13 04:46:48 UTC; kzst
 Author: Zsolt T. Kosztyan [aut, cre],
   Marcell T. Kurbucz [aut],
   Attila I. Katona [aut],
   Zahid Khan [aut]
 Repository: CRAN
-Date/Publication: 2025-02-16 12:00:02 UTC
+Date/Publication: 2026-03-13 07:40:02 UTC
