@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Zsolt T. Kosztyan, Marcell T. Kurbucz, Attila I. Katona, and Zahid Khan" />
+
+
+<title>Generalized NDR: associations, communities, and latent scores</title>
+
+<script src="nda-vignette-libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="nda-vignette-libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<link href="nda-vignette-libs/vis-9.1.0/vis-network.min.css" rel="stylesheet" />
+<script src="nda-vignette-libs/vis-9.1.0/vis-network.min.js"></script>
+<script src="nda-vignette-libs/visNetwork-binding-2.1.2/visNetwork.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">
+/* for pandoc --citeproc since 2.11 */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="vignette.css" type="text/css" />
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Generalized NDR: associations, communities,
+and latent scores</h1>
+<h4 class="author">Zsolt T. Kosztyan, Marcell T. Kurbucz, Attila I.
+Katona, and Zahid Khan</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#what-ndr-estimates" id="toc-what-ndr-estimates"><span
+class="toc-section-number">1</span> What <code>ndr()</code>
+estimates</a></li>
+<li><a href="#full-partial-and-semipartial-networks"
+id="toc-full-partial-and-semipartial-networks"><span
+class="toc-section-number">2</span> Full, partial, and semipartial
+networks</a></li>
+<li><a href="#inspecting-communities-and-latent-scores"
+id="toc-inspecting-communities-and-latent-scores"><span
+class="toc-section-number">3</span> Inspecting communities and latent
+scores</a></li>
+<li><a href="#predicting-new-observations"
+id="toc-predicting-new-observations"><span
+class="toc-section-number">4</span> Predicting new observations</a></li>
+<li><a href="#supplying-an-arbitrary-matrix-and-clustering-observations"
+id="toc-supplying-an-arbitrary-matrix-and-clustering-observations"><span
+class="toc-section-number">5</span> Supplying an arbitrary matrix and
+clustering observations</a></li>
+<li><a href="#static-and-interactive-networks"
+id="toc-static-and-interactive-networks"><span
+class="toc-section-number">6</span> Static and interactive networks</a>
+<ul>
+<li><a href="#static-association-network"
+id="toc-static-association-network"><span
+class="toc-section-number">6.1</span> Static association
+network</a></li>
+<li><a href="#interactive-association-network"
+id="toc-interactive-association-network"><span
+class="toc-section-number">6.2</span> Interactive association
+network</a></li>
+</ul></li>
+<li><a href="#biplot" id="toc-biplot"><span
+class="toc-section-number">7</span> Biplot</a></li>
+<li><a href="#inference-filtering-and-weighting"
+id="toc-inference-filtering-and-weighting"><span
+class="toc-section-number">8</span> Inference, filtering, and
+weighting</a></li>
+<li><a href="#sparse-storage-and-reproducible-settings"
+id="toc-sparse-storage-and-reproducible-settings"><span
+class="toc-section-number">9</span> Sparse storage and reproducible
+settings</a></li>
+<li><a href="#references" id="toc-references"><span
+class="toc-section-number">10</span> References</a></li>
+</ul>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var toc = document.getElementById("TOC");
+  if (!toc) return;
+  toc.setAttribute("aria-label", "Table of contents");
+  if (!toc.querySelector(".toc-title")) {
+    var title = document.createElement("div");
+    title.className = "toc-title";
+    title.textContent = "On this page";
+    toc.insertBefore(title, toc.firstChild);
+  }
+});
+</script>
+<div id="what-ndr-estimates" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> What <code>ndr()</code>
+estimates</h1>
+<p>Generalized network-based dimensionality reduction has three linked
+stages:</p>
+<ol style="list-style-type: decimal">
+<li>estimate or receive an association matrix;</li>
+<li>detect communities in the squared-association network;</li>
+<li>construct one standardized, centrality-weighted score per retained
+community.</li>
+</ol>
+<p>Squaring lets community detection use relationship strength. The
+unsquared association is retained for interpretation: positive edges are
+green, negative edges are red, and absolute magnitude controls width.
+Community membership is encoded by node colour only; indicators use one
+common shape by default. This visual grammar remains feasible when a
+model contains many communities.</p>
+<div class="visual-pipeline">
+<div class="pipeline-step">
+<strong>Association</strong>Variables or observations become nodes.
+</div>
+<div class="pipeline-step">
+<strong>Community</strong>Strongly connected nodes form modules.
+</div>
+<div class="pipeline-step">
+<strong>Score</strong>Each retained module defines one latent score.
+</div>
+</div>
+</div>
+<div id="full-partial-and-semipartial-networks" class="section level1"
+number="2">
+<h1><span class="header-section-number">2</span> Full, partial, and
+semipartial networks</h1>
+<p>The association method and conditioning type are independent choices.
+<code>cor_method</code> supports Pearson, Spearman, Kendall, distance,
+Gaussian-rank, and biweight associations. <code>cor_type</code> supports
+full, partial, and semipartial forms.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>fit_full <span class="ot">&lt;-</span> <span class="fu">ndr</span>(</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  swiss, <span class="at">cor_method =</span> <span class="st">&quot;pearson&quot;</span>, <span class="at">cor_type =</span> <span class="st">&quot;full&quot;</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="at">centrality =</span> <span class="st">&quot;pagerank&quot;</span>, <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>fit_partial <span class="ot">&lt;-</span> <span class="fu">ndr</span>(</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>  swiss, <span class="at">cor_method =</span> <span class="st">&quot;pearson&quot;</span>, <span class="at">cor_type =</span> <span class="st">&quot;partial&quot;</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>  <span class="at">centrality =</span> <span class="st">&quot;pagerank&quot;</span>, <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>fit_semipartial <span class="ot">&lt;-</span> <span class="fu">ndr</span>(</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>  swiss, <span class="at">cor_method =</span> <span class="st">&quot;pearson&quot;</span>, <span class="at">cor_type =</span> <span class="st">&quot;semipartial&quot;</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>  <span class="at">centrality =</span> <span class="st">&quot;authority&quot;</span>, <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>)</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>  <span class="at">network =</span> <span class="fu">c</span>(<span class="st">&quot;full&quot;</span>, <span class="st">&quot;partial&quot;</span>, <span class="st">&quot;semipartial&quot;</span>),</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>  <span class="at">factors =</span> <span class="fu">c</span>(fit_full<span class="sc">$</span>factors, fit_partial<span class="sc">$</span>factors,</span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>              fit_semipartial<span class="sc">$</span>factors),</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>  <span class="at">retained =</span> <span class="fu">c</span>(<span class="fu">sum</span>(fit_full<span class="sc">$</span>membership <span class="sc">&gt;</span> <span class="dv">0</span>),</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>               <span class="fu">sum</span>(fit_partial<span class="sc">$</span>membership <span class="sc">&gt;</span> <span class="dv">0</span>),</span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>               <span class="fu">sum</span>(fit_semipartial<span class="sc">$</span>membership <span class="sc">&gt;</span> <span class="dv">0</span>)),</span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>  <span class="at">directed =</span> <span class="fu">c</span>(fit_full<span class="sc">$</span>stats<span class="sc">$</span>directed,</span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a>               fit_partial<span class="sc">$</span>stats<span class="sc">$</span>directed,</span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a>               fit_semipartial<span class="sc">$</span>stats<span class="sc">$</span>directed)</span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a>)</span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>comparison</span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a><span class="co">#&gt;       network factors retained directed</span></span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="co">#&gt; 1        full       1        6    FALSE</span></span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a><span class="co">#&gt; 2     partial       2        6    FALSE</span></span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a><span class="co">#&gt; 3 semipartial       2        6     TRUE</span></span></code></pre></div>
+<p>Partial association asks whether two indicators remain related after
+the others are controlled on both sides. Semipartial association
+controls one side and may be directed; hub and authority centralities
+can therefore answer different questions.</p>
+</div>
+<div id="inspecting-communities-and-latent-scores"
+class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Inspecting communities
+and latent scores</h1>
+<p>The full Pearson fit provides a compact example of the fitted
+object.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fit_full</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt; Generalized network-based dimensionality reduction</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; ndr(r = swiss, cor_method = &quot;pearson&quot;, cor_type = &quot;full&quot;, seed = 42, </span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;     centrality = &quot;pagerank&quot;)</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; Factors: 1 | Observations: 47 | Modularity: 0 </span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; Association: full pearson | Centrality: pagerank | Null model: none </span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; Community sizes: 6 </span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; Loadings:</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt;                        NDA1</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; Fertility         0.2349525</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; Agriculture      -0.0149876</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; Examination       0.2113338</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; Education         0.3749632</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; Catholic          0.4953636</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; Infant.Mortality  0.4135369</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; Communalities:</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt;        Fertility      Agriculture      Examination        Education </span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt;        0.0552027        0.0002246        0.0446620        0.1405974 </span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt;         Catholic Infant.Mortality </span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt;        0.2453851        0.1710128</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="fu">summary</span>(fit_full)</span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; Generalized network-based dimensionality reduction</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="co">#&gt; ndr(r = swiss, cor_method = &quot;pearson&quot;, cor_type = &quot;full&quot;, seed = 42, </span></span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a><span class="co">#&gt;     centrality = &quot;pagerank&quot;)</span></span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a><span class="co">#&gt; Factors: 1 | Observations: 47 | Modularity: 0 </span></span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a><span class="co">#&gt; Association: full pearson | Centrality: pagerank | Null model: none </span></span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a><span class="co">#&gt; Community sizes: 6 </span></span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a><span class="co">#&gt; Loadings:</span></span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a><span class="co">#&gt;                        NDA1</span></span>
+<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a><span class="co">#&gt; Fertility         0.2349525</span></span>
+<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a><span class="co">#&gt; Agriculture      -0.0149876</span></span>
+<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a><span class="co">#&gt; Examination       0.2113338</span></span>
+<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a><span class="co">#&gt; Education         0.3749632</span></span>
+<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a><span class="co">#&gt; Catholic          0.4953636</span></span>
+<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a><span class="co">#&gt; Infant.Mortality  0.4135369</span></span>
+<span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a><span class="co">#&gt; Communalities:</span></span>
+<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a><span class="co">#&gt;        Fertility      Agriculture      Examination        Education </span></span>
+<span id="cb2-46"><a href="#cb2-46" tabindex="-1"></a><span class="co">#&gt;        0.0552027        0.0002246        0.0446620        0.1405974 </span></span>
+<span id="cb2-47"><a href="#cb2-47" tabindex="-1"></a><span class="co">#&gt;         Catholic Infant.Mortality </span></span>
+<span id="cb2-48"><a href="#cb2-48" tabindex="-1"></a><span class="co">#&gt;        0.2453851        0.1710128</span></span>
+<span id="cb2-49"><a href="#cb2-49" tabindex="-1"></a>fit_full<span class="sc">$</span>membership</span>
+<span id="cb2-50"><a href="#cb2-50" tabindex="-1"></a><span class="co">#&gt; [1] 1 1 1 1 1 1</span></span>
+<span id="cb2-51"><a href="#cb2-51" tabindex="-1"></a><span class="fu">round</span>(fit_full<span class="sc">$</span>loadings, <span class="dv">3</span>)</span>
+<span id="cb2-52"><a href="#cb2-52" tabindex="-1"></a><span class="co">#&gt;                    NDA1</span></span>
+<span id="cb2-53"><a href="#cb2-53" tabindex="-1"></a><span class="co">#&gt; Fertility         0.235</span></span>
+<span id="cb2-54"><a href="#cb2-54" tabindex="-1"></a><span class="co">#&gt; Agriculture      -0.015</span></span>
+<span id="cb2-55"><a href="#cb2-55" tabindex="-1"></a><span class="co">#&gt; Examination       0.211</span></span>
+<span id="cb2-56"><a href="#cb2-56" tabindex="-1"></a><span class="co">#&gt; Education         0.375</span></span>
+<span id="cb2-57"><a href="#cb2-57" tabindex="-1"></a><span class="co">#&gt; Catholic          0.495</span></span>
+<span id="cb2-58"><a href="#cb2-58" tabindex="-1"></a><span class="co">#&gt; Infant.Mortality  0.414</span></span>
+<span id="cb2-59"><a href="#cb2-59" tabindex="-1"></a><span class="fu">round</span>(fit_full<span class="sc">$</span>communality, <span class="dv">3</span>)</span>
+<span id="cb2-60"><a href="#cb2-60" tabindex="-1"></a><span class="co">#&gt;        Fertility      Agriculture      Examination        Education </span></span>
+<span id="cb2-61"><a href="#cb2-61" tabindex="-1"></a><span class="co">#&gt;            0.055            0.000            0.045            0.141 </span></span>
+<span id="cb2-62"><a href="#cb2-62" tabindex="-1"></a><span class="co">#&gt;         Catholic Infant.Mortality </span></span>
+<span id="cb2-63"><a href="#cb2-63" tabindex="-1"></a><span class="co">#&gt;            0.245            0.171</span></span>
+<span id="cb2-64"><a href="#cb2-64" tabindex="-1"></a>fit_full<span class="sc">$</span>stats<span class="sc">$</span>community_sizes</span>
+<span id="cb2-65"><a href="#cb2-65" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-66"><a href="#cb2-66" tabindex="-1"></a><span class="co">#&gt; 1 </span></span>
+<span id="cb2-67"><a href="#cb2-67" tabindex="-1"></a><span class="co">#&gt; 6</span></span></code></pre></div>
+<p><code>membership</code> identifies the score to which an indicator
+contributes. <code>loadings</code> connect indicators to the resulting
+scores; <code>communality</code> describes how well each indicator is
+represented. A zero membership means exclusion.</p>
+<p>For a confirmatory illustration, a fixed two-community structure
+makes the network and biplot stable across community-detection
+backends.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>visual_fit <span class="ot">&lt;-</span> <span class="fu">ndr</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  swiss,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">cor_method =</span> <span class="st">&quot;pearson&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">membership =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">0</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">centrality =</span> <span class="st">&quot;eigenvector&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">indicator =</span> <span class="fu">colnames</span>(visual_fit<span class="sc">$</span>R),</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="at">community =</span> <span class="fu">unname</span>(visual_fit<span class="sc">$</span>membership)</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;          indicator community</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; 1        Fertility         1</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; 2      Agriculture         1</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt; 3      Examination         2</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt; 4        Education         2</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; 5         Catholic         2</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt; 6 Infant.Mortality         0</span></span></code></pre></div>
+</div>
+<div id="predicting-new-observations" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Predicting new
+observations</h1>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>new_scores <span class="ot">&lt;-</span> <span class="fu">predict</span>(visual_fit, swiss[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">round</span>(new_scores, <span class="dv">3</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt;                NDA1   NDA2</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; Courtelary   -0.412 -0.344</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; Delemont      0.482 -0.568</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; Franches-Mnt  0.795 -0.797</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; Moutier       0.383 -0.654</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; Neuveville    0.137 -0.056</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="fu">identical</span>(<span class="fu">predict</span>(visual_fit), visual_fit<span class="sc">$</span>scores)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>Prediction reuses the training means, scales, indicator weights,
+centrality weights, latent centring, latent scaling, and rotation.
+Consequently, scores for new observations remain on the fitted model’s
+coordinate system.</p>
+</div>
+<div id="supplying-an-arbitrary-matrix-and-clustering-observations"
+class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Supplying an arbitrary
+matrix and clustering observations</h1>
+<p>With <code>covar = TRUE</code>, <code>ndr()</code> accepts a square
+matrix directly. This makes the method usable beyond correlation
+matrices. The example below follows the clustering use described in
+<span class="citation">Kosztyán (<a
+href="#ref-Kosztyan2023">2023</a>)</span>: Euclidean distances between
+the standardized Swiss observations are converted to similarities.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>scaled_swiss <span class="ot">&lt;-</span> <span class="fu">scale</span>(swiss)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>distance_matrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">dist</span>(scaled_swiss))</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>similarity_matrix <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">normalize</span>(distance_matrix)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">diag</span>(similarity_matrix) <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>cluster_fit <span class="ot">&lt;-</span> <span class="fu">ndr</span>(</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  similarity_matrix,</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">covar =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">min_comm =</span> <span class="dv">2</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">centrality =</span> <span class="st">&quot;eigenvector&quot;</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>)</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>cluster_fit<span class="sc">$</span>factors</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; [1] 2</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="fu">table</span>(cluster_fit<span class="sc">$</span>membership)</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co">#&gt;  1  2 </span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="co">#&gt; 30 17</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="fu">head</span>(cluster_fit<span class="sc">$</span>membership, <span class="dv">10</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt;  [1] 1 2 2 2 1 2 2 2 2 2</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="fu">is.null</span>(cluster_fit<span class="sc">$</span>scores)</span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>Here the nodes are observations rather than indicators. The returned
+membership is therefore an observation clustering. Since an arbitrary
+matrix contains no original row-level transformation, latent scores for
+new rows are not available in this mode.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>cluster_network <span class="ot">&lt;-</span> <span class="fu">plot</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  cluster_fit,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">cuts =</span> <span class="fl">0.55</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">interactive =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">show_weights =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">shape =</span> <span class="st">&quot;automatic&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">vertex.label.size =</span> <span class="dv">7</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">layout =</span> <span class="st">&quot;fr&quot;</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>cluster_network</span></code></pre></div>
+<div class="figure">
+<img src="ndr-workflow_files/figure-html/clustering-network-1.png" alt="Observation clusters obtained from a normalized Euclidean similarity matrix." width="100%" />
+<p class="caption">
+Observation clusters obtained from a normalized Euclidean similarity
+matrix.
+</p>
+</div>
+</div>
+<div id="static-and-interactive-networks" class="section level1"
+number="6">
+<h1><span class="header-section-number">6</span> Static and interactive
+networks</h1>
+<div id="static-association-network" class="section level2"
+number="6.1">
+<h2><span class="header-section-number">6.1</span> Static association
+network</h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>static_network <span class="ot">&lt;-</span> <span class="fu">plot</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  visual_fit,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">cuts =</span> <span class="fl">0.3</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">interactive =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">show_weights =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">shape =</span> <span class="st">&quot;automatic&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>static_network</span></code></pre></div>
+<div class="figure">
+<img src="ndr-workflow_files/figure-html/ndr-static-network-1.png" alt="NDR association network: colour denotes community, edge colour denotes sign, and width denotes absolute association." width="100%" />
+<p class="caption">
+NDR association network: colour denotes community, edge colour denotes
+sign, and width denotes absolute association.
+</p>
+</div>
+<p>All observed indicators use the same shape. The two communities
+differ only by colours from the default light qualitative palette. Solid
+green and red edges distinguish positive and negative associations;
+their thickness is scaled between the requested minimum and maximum
+widths. Each edge label has an opaque background and is displaced from
+the edge so that neither the line nor another label overwrites the
+number.</p>
+</div>
+<div id="interactive-association-network" class="section level2"
+number="6.2">
+<h2><span class="header-section-number">6.2</span> Interactive
+association network</h2>
+<p>The interactive representation uses exactly the same colour, shape,
+sign, and width grammar. Nodes can be moved, while zooming, panning,
+selection, and nearest-neighbour highlighting support closer
+inspection.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>interactive_network <span class="ot">&lt;-</span> <span class="fu">plot</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  visual_fit,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">cuts =</span> <span class="fl">0.3</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">interactive =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">show_weights =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">shape =</span> <span class="st">&quot;automatic&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>interactive_network<span class="sc">$</span>widget</span></code></pre></div>
+<div id="htmlwidget-a97dce6f1ac0d65cdea7" style="width:100%;height:800px;" class="visNetwork html-widget"></div>
+<script type="application/json" data-for="htmlwidget-a97dce6f1ac0d65cdea7">{"x":{"nodes":{"id":[1,2,3,4,5,6],"label":["Fertility","Agriculture","Examination","Education","Catholic","Infant.Mortality"],"color":["#ED90A4","#ED90A4","#00C1B2","#00C1B2","#00C1B2","grey88"],"shape":["box","box","box","box","box","box"],"label_color":["#17202A","#17202A","#17202A","#17202A","#17202A","#17202A"],"font.size":[12,12,12,12,12,12],"font.color":["#17202A","#17202A","#17202A","#17202A","#17202A","#17202A"],"borderWidth":[1.5,1.5,1.5,1.5,1.5,1.5],"title":["Fertility - community 1","Agriculture - community 1","Examination - community 2","Education - community 2","Catholic - community 2","Infant.Mortality - excluded"],"x":[-1,-0.1551514222256332,-0.3397620169726278,-0.719731104361125,-0.02606830576338803,1],"y":[0.07813694433773466,-1,0.01811828166177798,-0.7295930896957927,1,-0.3407627194146966]},"edges":{"from":[1,1,2,2,3,3],"to":[3,4,3,4,4,5],"width":[3.909957392866655,4.622365019400331,5.527621630856515,3.656913274428677,6,1],"color":["#C62828","#C62828","#C62828","#C62828","#009E73","#C62828"],"label":["-0.646","-0.664","-0.687","-0.640","0.698","-0.573"],"dashes":[false,false,false,false,false,false],"arrows":["","","","","",""],"font.size":[10,10,10,10,10,10],"font.color":["#333333","#333333","#333333","#333333","#333333","#333333"],"font.background":["#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6"]},"nodesToDataframe":true,"edgesToDataframe":true,"options":{"width":"100%","height":"100%","nodes":{"shape":"dot","shadow":{"enabled":true,"color":"rgba(0,0,0,0.16)","size":5,"x":1,"y":2},"margin":12,"physics":true},"manipulation":{"enabled":false},"edges":{"font":{"background":"#FFFFFFE6","align":"middle","strokeWidth":0},"smooth":false},"interaction":{"dragNodes":true,"dragView":true,"hideEdgesOnDrag":false,"zoomView":true,"zoomSpeed":1},"physics":{"stabilization":false}},"groups":null,"width":"100%","height":"800px","idselection":{"enabled":false,"style":"width: 150px; height: 26px","useLabels":true,"main":"Select by id"},"byselection":{"enabled":true,"style":"width: 150px; height: 26px","multiple":false,"hideColor":"rgba(200,200,200,0.5)","highlight":false,"variable":"label","main":"Select by label","values":["Agriculture","Catholic","Education","Examination","Fertility","Infant.Mortality"]},"main":null,"submain":null,"footer":null,"background":"rgba(0, 0, 0, 0)","highlight":{"enabled":true,"hoverNearest":false,"degree":1,"algorithm":"all","hideColor":"rgba(200,200,200,0.5)","labelOnly":true},"collapse":{"enabled":false,"fit":false,"resetHighlight":true,"clusterOptions":null,"keepCoord":true,"labelSuffix":"(cluster)"},"tooltipStay":300,"tooltipStyle":"position: fixed;visibility:hidden;padding: 5px;white-space: nowrap;font-family: verdana;font-size:14px;font-color:#000000;background-color: #f5f4ed;-moz-border-radius: 3px;-webkit-border-radius: 3px;border-radius: 3px;border: 1px solid #808074;box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);","igraphlayout":{"type":"square"}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div id="biplot" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Biplot</h1>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>score_biplot <span class="ot">&lt;-</span> <span class="fu">biplot</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  visual_fit,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">view_3D =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">interactive =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>score_biplot</span></code></pre></div>
+<div class="figure">
+<img src="ndr-workflow_files/figure-html/ndr-biplot-1.png" alt="Two-factor NDR biplot for the fixed Swiss-data communities." width="100%" />
+<p class="caption">
+Two-factor NDR biplot for the fixed Swiss-data communities.
+</p>
+</div>
+<p>Nearby observation points have similar score profiles. Loading arrows
+indicate the direction of increasing indicator values. The graph
+explains association structure; the biplot explains observations and
+indicators in latent-score space. Neither should be read as a causal
+model.</p>
+</div>
+<div id="inference-filtering-and-weighting" class="section level1"
+number="8">
+<h1><span class="header-section-number">8</span> Inference, filtering,
+and weighting</h1>
+<p>The optional style controls can be demonstrated on the same fitted
+network. All observed indicators remain rectangles, and community uses
+colour only. Shapes are supplied in association-matrix column order.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>custom_network <span class="ot">&lt;-</span> <span class="fu">plot</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  visual_fit, <span class="at">interactive =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">shape =</span> <span class="fu">rep</span>(<span class="st">&quot;rectangle&quot;</span>, <span class="fu">ncol</span>(visual_fit<span class="sc">$</span>R)),</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">positive.color =</span> <span class="st">&quot;#007A53&quot;</span>, <span class="at">negative.color =</span> <span class="st">&quot;#B71C1C&quot;</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">positive.lty =</span> <span class="dv">1</span>, <span class="at">negative.lty =</span> <span class="dv">1</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">edge.width.range =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">5</span>), <span class="at">show_weights =</span> <span class="cn">TRUE</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>)</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>custom_network</span></code></pre></div>
+<div class="figure">
+<img src="ndr-workflow_files/figure-html/custom-network-1.png" alt="Explicit common node shape, custom signed colours, and bounded edge widths." width="100%" />
+<p class="caption">
+Explicit common node shape, custom signed colours, and bounded edge
+widths.
+</p>
+</div>
+<p>For a four-node graph, an individual shape vector could instead be
+<code>c("circle", "circle", "square", "square")</code>; shapes are not
+assigned by community. Optional <code>positive.lty</code> and
+<code>negative.lty</code> control line types. Both default to 1 (solid).
+Widths are scaled within the displayed graph; separate graphs require a
+common scale for direct width comparisons.</p>
+<p>Association tests and bootstrap intervals can be executed on a small
+example without dominating build time. The low replicate count below
+illustrates the returned structure; final inference should use a larger
+<code>n_boot</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>inference_fit <span class="ot">&lt;-</span> <span class="fu">ndr</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  swiss,</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">cor_method =</span> <span class="st">&quot;pearson&quot;</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">test =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  <span class="at">p_adjust =</span> <span class="st">&quot;BH&quot;</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">alpha =</span> <span class="fl">0.10</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  <span class="at">bootstrap =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  <span class="at">n_boot =</span> <span class="dv">30</span>,</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="at">conf =</span> <span class="fl">0.90</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>)</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="fu">round</span>(inference_fit<span class="sc">$</span>correlation_p, <span class="dv">3</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co">#&gt;                  Fertility Agriculture Examination Education Catholic</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt; Fertility            0.000       0.022       0.000     0.000    0.002</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt; Agriculture          0.022       0.000       0.000     0.000    0.009</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co">#&gt; Examination          0.000       0.000       0.000     0.000    0.000</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co">#&gt; Education            0.000       0.000       0.000     0.000    0.377</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co">#&gt; Catholic             0.002       0.009       0.000     0.377    0.000</span></span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co">#&gt; Infant.Mortality     0.007       0.684       0.514     0.543    0.325</span></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co">#&gt;                  Infant.Mortality</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="co">#&gt; Fertility                   0.007</span></span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a><span class="co">#&gt; Agriculture                 0.684</span></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a><span class="co">#&gt; Examination                 0.514</span></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a><span class="co">#&gt; Education                   0.543</span></span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a><span class="co">#&gt; Catholic                    0.325</span></span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a><span class="co">#&gt; Infant.Mortality            0.000</span></span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a><span class="fu">head</span>(inference_fit<span class="sc">$</span>stats<span class="sc">$</span>bootstrap<span class="sc">$</span>lower)</span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a><span class="co">#&gt;                         NDA1</span></span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a><span class="co">#&gt; Fertility        -0.15056415</span></span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a><span class="co">#&gt; Agriculture      -0.32327584</span></span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a><span class="co">#&gt; Examination      -0.01199384</span></span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a><span class="co">#&gt; Education         0.23361287</span></span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a><span class="co">#&gt; Catholic          0.26218893</span></span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a><span class="co">#&gt; Infant.Mortality  0.03305719</span></span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a><span class="fu">head</span>(inference_fit<span class="sc">$</span>stats<span class="sc">$</span>bootstrap<span class="sc">$</span>upper)</span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a><span class="co">#&gt;                       NDA1</span></span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a><span class="co">#&gt; Fertility        0.3687283</span></span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a><span class="co">#&gt; Agriculture      0.2347789</span></span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a><span class="co">#&gt; Examination      0.5330512</span></span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a><span class="co">#&gt; Education        0.6611118</span></span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a><span class="co">#&gt; Catholic         0.6178982</span></span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a><span class="co">#&gt; Infant.Mortality 0.5202130</span></span></code></pre></div>
+<p>The principal filtering controls are <code>min_R</code>,
+<code>min_evalue</code>, <code>min_communality</code>,
+<code>com_communalities</code>, and <code>min_comm</code>. The
+<code>weight</code> argument supplies one finite score weight per
+indicator. These filters act at different stages: network formation,
+centrality screening, representation, loading separation, and minimum
+module size.</p>
+</div>
+<div id="sparse-storage-and-reproducible-settings"
+class="section level1" number="9">
+<h1><span class="header-section-number">9</span> Sparse storage and
+reproducible settings</h1>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>sparse_fit <span class="ot">&lt;-</span> <span class="fu">ndr</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  swiss,</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">min_R =</span> <span class="fl">0.15</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">sparsecalc =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>)</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="fu">inherits</span>(sparse_fit<span class="sc">$</span>R, <span class="st">&quot;sparseMatrix&quot;</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>sparse_fit<span class="sc">$</span>factors</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="co">#&gt; [1] 2</span></span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>sparse_fit<span class="sc">$</span>stats<span class="sc">$</span>community_sizes</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="co">#&gt; 1 2 </span></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a><span class="co">#&gt; 3 3</span></span></code></pre></div>
+<p>Sparse storage is helpful after thresholding a large network.
+Parallel workers mainly benefit pairwise distance association and
+bootstrap calculations; small Pearson examples usually run faster
+sequentially. A fixed <code>seed</code> makes the stochastic parts
+reproducible.</p>
+</div>
+<div id="references" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> References</h1>
+<p>The cited literature covers the original NDA method, the generalized
+association-matrix formulation, the clustering interpretation, the
+software interface, and the supervised extension <span
+class="citation">(<a href="#ref-Kosztyan2022">Kosztyán et al. 2022</a>,
+<a href="#ref-Kosztyan2024">2024</a>; <a
+href="#ref-Kosztyan2023">Kosztyán 2023</a>; <a
+href="#ref-Kosztyan2026Packages">Kosztyán 2026b</a>, <a
+href="#ref-Kosztyan2026NBSEM">2026a</a>)</span>.</p>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-Kosztyan2026NBSEM" class="csl-entry">
+Kosztyán, Zsolt T. 2026a. <span>“Network-Based Structural Equation
+Models for Supervised Machine Learning Problems.”</span> Unpublished
+manuscript.
+</div>
+<div id="ref-Kosztyan2026Packages" class="csl-entry">
+Kosztyán, Zsolt T. 2026b. <span>“R and MATLAB Packages for Network-Based
+Dimensionality Reduction Analysis.”</span> Unpublished manuscript.
+</div>
+<div id="ref-Kosztyan2023" class="csl-entry">
+Kosztyán, Zsolt Tibor. 2023. <span>“Hálózatalapú Modell- És
+Adatredukciós Módszer.”</span> <em>Statisztikai Szemle</em> 101 (4):
+289–324. <a
+href="https://doi.org/10.20311/stat2023.04.hu0289">https://doi.org/10.20311/stat2023.04.hu0289</a>.
+</div>
+<div id="ref-Kosztyan2024" class="csl-entry">
+Kosztyán, Zsolt T., Attila I. Katona, Marcell T. Kurbucz, and Zoltán
+Lantos. 2024. <span>“Generalized Network-Based Dimensionality
+Analysis.”</span> <em>Expert Systems with Applications</em> 238: 121779.
+<a
+href="https://doi.org/10.1016/j.eswa.2023.121779">https://doi.org/10.1016/j.eswa.2023.121779</a>.
+</div>
+<div id="ref-Kosztyan2022" class="csl-entry">
+Kosztyán, Zsolt T., Marcell T. Kurbucz, and Attila I. Katona. 2022.
+<span>“Network-Based Dimensionality Reduction of High-Dimensional,
+Low-Sample-Size Datasets.”</span> <em>Knowledge-Based Systems</em> 251:
+109180. <a
+href="https://doi.org/10.1016/j.knosys.2022.109180">https://doi.org/10.1016/j.knosys.2022.109180</a>.
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

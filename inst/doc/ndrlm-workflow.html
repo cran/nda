@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Zsolt T. Kosztyan, Marcell T. Kurbucz, Attila I. Katona, and Zahid Khan" />
+
+
+<title>Supervised NDRLM: latent-variable regression and optimization</title>
+
+<script src="nda-vignette-libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="nda-vignette-libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<link href="nda-vignette-libs/vis-9.1.0/vis-network.min.css" rel="stylesheet" />
+<script src="nda-vignette-libs/vis-9.1.0/vis-network.min.js"></script>
+<script src="nda-vignette-libs/visNetwork-binding-2.1.2/visNetwork.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">
+/* for pandoc --citeproc since 2.11 */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="vignette.css" type="text/css" />
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Supervised NDRLM: latent-variable
+regression and optimization</h1>
+<h4 class="author">Zsolt T. Kosztyan, Marcell T. Kurbucz, Attila I.
+Katona, and Zahid Khan</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#what-ndrlm-adds" id="toc-what-ndrlm-adds"><span
+class="toc-section-number">1</span> What <code>ndrlm()</code>
+adds</a></li>
+<li><a href="#published-latent-input-example"
+id="toc-published-latent-input-example"><span
+class="toc-section-number">2</span> Published latent-input
+example</a></li>
+<li><a href="#predictions-and-residual-diagnostics"
+id="toc-predictions-and-residual-diagnostics"><span
+class="toc-section-number">3</span> Predictions and residual
+diagnostics</a></li>
+<li><a href="#input-output-and-full-latent-models"
+id="toc-input-output-and-full-latent-models"><span
+class="toc-section-number">4</span> Input, output, and full latent
+models</a></li>
+<li><a href="#regression-engines-with-visible-results"
+id="toc-regression-engines-with-visible-results"><span
+class="toc-section-number">5</span> Regression engines with visible
+results</a></li>
+<li><a href="#nsga-ii-optimization-and-convergence-history"
+id="toc-nsga-ii-optimization-and-convergence-history"><span
+class="toc-section-number">6</span> NSGA-II optimization and convergence
+history</a></li>
+<li><a href="#static-and-interactive-latent-path-networks"
+id="toc-static-and-interactive-latent-path-networks"><span
+class="toc-section-number">7</span> Static and interactive latent path
+networks</a>
+<ul>
+<li><a href="#static-latent-path-network"
+id="toc-static-latent-path-network"><span
+class="toc-section-number">7.1</span> Static latent path
+network</a></li>
+<li><a href="#interactive-latent-path-network"
+id="toc-interactive-latent-path-network"><span
+class="toc-section-number">7.2</span> Interactive latent path
+network</a></li>
+</ul></li>
+<li><a href="#references" id="toc-references"><span
+class="toc-section-number">8</span> References</a></li>
+</ul>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var toc = document.getElementById("TOC");
+  if (!toc) return;
+  toc.setAttribute("aria-label", "Table of contents");
+  if (!toc.querySelector(".toc-title")) {
+    var title = document.createElement("div");
+    title.className = "toc-title";
+    title.textContent = "On this page";
+    toc.insertBefore(title, toc.firstChild);
+  }
+});
+</script>
+<div id="what-ndrlm-adds" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> What
+<code>ndrlm()</code> adds</h1>
+<p><code>ndrlm()</code> combines network-based dimensionality reduction
+with one supervised model per dependent variable. It can reduce the
+input side, the output side, both sides, or neither; retain excluded
+indicators as direct connections; fit OLS, ridge, elastic-net, or LOESS
+models; and tune NDA weights and thresholds with NSGA-II.</p>
+<div class="visual-pipeline">
+<div class="pipeline-step">
+<strong>1. Reduce</strong>Observed indicators form input and/or output
+latent variables.
+</div>
+<div class="pipeline-step">
+<strong>2. Regress</strong>Latent and direct variables enter the
+selected regression engine.
+</div>
+<div class="pipeline-step">
+<strong>3. Evaluate</strong>Metrics, predictions, residuals, paths, and
+optimization history are retained.
+</div>
+</div>
+<p>NDRLM is predictive and exploratory. A fitted path is not, by itself,
+evidence of a causal effect. Its role as a data-driven benchmark for
+structural models is developed in <span class="citation">Kosztyán (<a
+href="#ref-Kosztyan2026NBSEM">2026a</a>)</span>.</p>
+</div>
+<div id="published-latent-input-example" class="section level1"
+number="2">
+<h1><span class="header-section-number">2</span> Published latent-input
+example</h1>
+<p>The example follows the article’s low-sample-size <code>mtcars</code>
+analysis. The ten input indicators form two communities. The first
+groups <code>cyl</code>, <code>hp</code>, <code>qsec</code>,
+<code>vs</code>, and <code>carb</code>; the second groups
+<code>disp</code>, <code>drat</code>, <code>wt</code>, <code>am</code>,
+and <code>gear</code>. The two resulting input latent variables predict
+<code>mpg</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>X_car <span class="ot">&lt;-</span> mtcars[, <span class="fu">setdiff</span>(<span class="fu">names</span>(mtcars), <span class="st">&quot;mpg&quot;</span>)]</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>Y_car <span class="ot">&lt;-</span> mtcars[<span class="st">&quot;mpg&quot;</span>]</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>input_membership <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="at">cyl =</span> <span class="dv">1</span>, <span class="at">disp =</span> <span class="dv">2</span>, <span class="at">hp =</span> <span class="dv">1</span>, <span class="at">drat =</span> <span class="dv">2</span>, <span class="at">wt =</span> <span class="dv">2</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="at">qsec =</span> <span class="dv">1</span>, <span class="at">vs =</span> <span class="dv">1</span>, <span class="at">am =</span> <span class="dv">2</span>, <span class="at">gear =</span> <span class="dv">2</span>, <span class="at">carb =</span> <span class="dv">1</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>fit_latent <span class="ot">&lt;-</span> <span class="fu">ndrlm</span>(</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>  Y_car, X_car,</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>  <span class="at">latents =</span> <span class="st">&quot;in&quot;</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>  <span class="at">optimize =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>  <span class="at">membership.X =</span> input_membership,</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  <span class="at">regression =</span> <span class="st">&quot;lm&quot;</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>)</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>fit_latent</span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#&gt; Network-based dimensionality reduction and regression</span></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="co">#&gt; ndrlm(Y = Y_car, X = X_car, latents = &quot;in&quot;, optimize = FALSE, </span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="co">#&gt;     seed = 42, regression = &quot;lm&quot;, membership.X = input_membership)</span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="co">#&gt; Regression: lm | Latent mode: in | Optimized: no </span></span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="co">#&gt; Target: adj.r.square | Objective: 0.4508713 </span></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="co">#&gt; Independent variables: NDAin1, NDAin2 </span></span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a><span class="co">#&gt; Dependent variables: mpg </span></span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="co">#&gt;  response    metric</span></span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a><span class="co">#&gt;       mpg 0.4508713</span></span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a><span class="co">#&gt; Fit for mpg </span></span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a><span class="co">#&gt; stats::lm(formula = lm_formula, data = lm_train)</span></span>
+<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a><span class="co">#&gt; Residuals:</span></span>
+<span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a><span class="co">#&gt;        Min         1Q     Median         3Q        Max </span></span>
+<span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a><span class="co">#&gt; -6.2287304 -2.7541419 -0.9093334  2.5742679 10.4369019 </span></span>
+<span id="cb1-38"><a href="#cb1-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-39"><a href="#cb1-39" tabindex="-1"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb1-40"><a href="#cb1-40" tabindex="-1"></a><span class="co">#&gt;               Estimate Std. Error  t value   Pr(&gt;|t|)    </span></span>
+<span id="cb1-41"><a href="#cb1-41" tabindex="-1"></a><span class="co">#&gt; (Intercept) 20.0906250  0.7895134 25.44684 &lt; 2.22e-16 ***</span></span>
+<span id="cb1-42"><a href="#cb1-42" tabindex="-1"></a><span class="co">#&gt; NDAin1      -4.2225851  0.8065667 -5.23526 1.3191e-05 ***</span></span>
+<span id="cb1-43"><a href="#cb1-43" tabindex="-1"></a><span class="co">#&gt; NDAin2       0.2710497  0.8065667  0.33605    0.73925    </span></span>
+<span id="cb1-44"><a href="#cb1-44" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb1-45"><a href="#cb1-45" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-47"><a href="#cb1-47" tabindex="-1"></a><span class="co">#&gt; Residual standard error: 4.466162 on 29 degrees of freedom</span></span>
+<span id="cb1-48"><a href="#cb1-48" tabindex="-1"></a><span class="co">#&gt; Multiple R-squared:  0.486299,   Adjusted R-squared:  0.4508713 </span></span>
+<span id="cb1-49"><a href="#cb1-49" tabindex="-1"></a><span class="co">#&gt; F-statistic: 13.72653 on 2 and 29 DF,  p-value: 6.387067e-05</span></span>
+<span id="cb1-50"><a href="#cb1-50" tabindex="-1"></a><span class="fu">summary</span>(fit_latent)</span>
+<span id="cb1-51"><a href="#cb1-51" tabindex="-1"></a><span class="co">#&gt; Network-based dimensionality reduction and regression</span></span>
+<span id="cb1-52"><a href="#cb1-52" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb1-53"><a href="#cb1-53" tabindex="-1"></a><span class="co">#&gt; ndrlm(Y = Y_car, X = X_car, latents = &quot;in&quot;, optimize = FALSE, </span></span>
+<span id="cb1-54"><a href="#cb1-54" tabindex="-1"></a><span class="co">#&gt;     seed = 42, regression = &quot;lm&quot;, membership.X = input_membership)</span></span>
+<span id="cb1-55"><a href="#cb1-55" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-56"><a href="#cb1-56" tabindex="-1"></a><span class="co">#&gt; Regression: lm | Latent mode: in | Optimized: no </span></span>
+<span id="cb1-57"><a href="#cb1-57" tabindex="-1"></a><span class="co">#&gt; Target: adj.r.square | Objective: 0.4508713 </span></span>
+<span id="cb1-58"><a href="#cb1-58" tabindex="-1"></a><span class="co">#&gt; Independent variables: NDAin1, NDAin2 </span></span>
+<span id="cb1-59"><a href="#cb1-59" tabindex="-1"></a><span class="co">#&gt; Dependent variables: mpg </span></span>
+<span id="cb1-60"><a href="#cb1-60" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-61"><a href="#cb1-61" tabindex="-1"></a><span class="co">#&gt;  response    metric</span></span>
+<span id="cb1-62"><a href="#cb1-62" tabindex="-1"></a><span class="co">#&gt;       mpg 0.4508713</span></span>
+<span id="cb1-63"><a href="#cb1-63" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-64"><a href="#cb1-64" tabindex="-1"></a><span class="co">#&gt; Fit for mpg </span></span>
+<span id="cb1-65"><a href="#cb1-65" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-66"><a href="#cb1-66" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb1-67"><a href="#cb1-67" tabindex="-1"></a><span class="co">#&gt; stats::lm(formula = lm_formula, data = lm_train)</span></span>
+<span id="cb1-68"><a href="#cb1-68" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-69"><a href="#cb1-69" tabindex="-1"></a><span class="co">#&gt; Residuals:</span></span>
+<span id="cb1-70"><a href="#cb1-70" tabindex="-1"></a><span class="co">#&gt;        Min         1Q     Median         3Q        Max </span></span>
+<span id="cb1-71"><a href="#cb1-71" tabindex="-1"></a><span class="co">#&gt; -6.2287304 -2.7541419 -0.9093334  2.5742679 10.4369019 </span></span>
+<span id="cb1-72"><a href="#cb1-72" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-73"><a href="#cb1-73" tabindex="-1"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb1-74"><a href="#cb1-74" tabindex="-1"></a><span class="co">#&gt;               Estimate Std. Error  t value   Pr(&gt;|t|)    </span></span>
+<span id="cb1-75"><a href="#cb1-75" tabindex="-1"></a><span class="co">#&gt; (Intercept) 20.0906250  0.7895134 25.44684 &lt; 2.22e-16 ***</span></span>
+<span id="cb1-76"><a href="#cb1-76" tabindex="-1"></a><span class="co">#&gt; NDAin1      -4.2225851  0.8065667 -5.23526 1.3191e-05 ***</span></span>
+<span id="cb1-77"><a href="#cb1-77" tabindex="-1"></a><span class="co">#&gt; NDAin2       0.2710497  0.8065667  0.33605    0.73925    </span></span>
+<span id="cb1-78"><a href="#cb1-78" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb1-79"><a href="#cb1-79" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb1-80"><a href="#cb1-80" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-81"><a href="#cb1-81" tabindex="-1"></a><span class="co">#&gt; Residual standard error: 4.466162 on 29 degrees of freedom</span></span>
+<span id="cb1-82"><a href="#cb1-82" tabindex="-1"></a><span class="co">#&gt; Multiple R-squared:  0.486299,   Adjusted R-squared:  0.4508713 </span></span>
+<span id="cb1-83"><a href="#cb1-83" tabindex="-1"></a><span class="co">#&gt; F-statistic: 13.72653 on 2 and 29 DF,  p-value: 6.387067e-05</span></span></code></pre></div>
+<p>The NDA object remains available inside the supervised model, so the
+measurement structure is inspectable rather than hidden.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">indicator =</span> <span class="fu">colnames</span>(fit_latent<span class="sc">$</span>NDAin<span class="sc">$</span>R),</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">community =</span> <span class="fu">unname</span>(fit_latent<span class="sc">$</span>NDAin<span class="sc">$</span>membership)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>)</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;    indicator community</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; 1        cyl         1</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; 2       disp         2</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; 3         hp         1</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; 4       drat         2</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; 5         wt         2</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; 6       qsec         1</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; 7         vs         1</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; 8         am         2</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; 9       gear         2</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; 10      carb         1</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="fu">round</span>(fit_latent<span class="sc">$</span>NDAin<span class="sc">$</span>loadings, <span class="dv">3</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt;        NDA1   NDA2</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; cyl   0.620  0.034</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; disp  0.618  0.075</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; hp    0.735  0.378</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt; drat -0.468  0.490</span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt; wt    0.719  0.008</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt; qsec -0.144 -0.526</span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt; vs   -0.233 -0.278</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt; am   -0.499  0.612</span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; gear -0.250  0.680</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt; carb  0.627  0.590</span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="fu">coef</span>(fit_latent<span class="sc">$</span>fits[[<span class="dv">1</span>]])</span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a><span class="co">#&gt; (Intercept)      NDAin1      NDAin2 </span></span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a><span class="co">#&gt;  20.0906250  -4.2225851   0.2710497</span></span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a>fit_latent<span class="sc">$</span>fit_stats</span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a><span class="co">#&gt;   response    metric</span></span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a><span class="co">#&gt; 1      mpg 0.4508713</span></span></code></pre></div>
+<p>The latent scores are computed only from their own community
+indicators. The OLS coefficients then describe the fitted relationship
+between each input latent variable and <code>mpg</code>.</p>
+</div>
+<div id="predictions-and-residual-diagnostics" class="section level1"
+number="3">
+<h1><span class="header-section-number">3</span> Predictions and
+residual diagnostics</h1>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>prediction <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_latent, X_car)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>diagnostic <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">observed =</span> Y_car<span class="sc">$</span>mpg,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">fitted =</span> <span class="fu">fitted</span>(fit_latent)<span class="sc">$</span>mpg,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">residual =</span> <span class="fu">residuals</span>(fit_latent)<span class="sc">$</span>mpg</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">head</span>(prediction)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;                        mpg</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; Mazda RX4         24.76310</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; Mazda RX4 Wag     24.02762</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt; Datsun 710        24.07228</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; Hornet 4 Drive    18.79777</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; Hornet Sportabout 20.59865</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; Valiant           17.83850</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="fu">head</span>(diagnostic)</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt;   observed   fitted   residual</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; 1     21.0 24.76310 -3.7630984</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt; 2     21.0 24.02762 -3.0276225</span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt; 3     22.8 24.07228 -1.2722817</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; 4     21.4 18.79777  2.6022336</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt; 5     18.7 20.59865 -1.8986459</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt; 6     18.1 17.83850  0.2614997</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">3</span>, <span class="dv">1</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">plot</span>(diagnostic<span class="sc">$</span>observed, diagnostic<span class="sc">$</span>fitted,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">col =</span> <span class="st">&quot;#0072B2&quot;</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;Observed mpg&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Fitted mpg&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Observed versus fitted&quot;</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">col =</span> <span class="st">&quot;grey45&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">plot</span>(diagnostic<span class="sc">$</span>fitted, diagnostic<span class="sc">$</span>residual,</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">col =</span> <span class="st">&quot;#009E73&quot;</span>,</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;Fitted mpg&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Residual&quot;</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Residual pattern&quot;</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">0</span>, <span class="at">col =</span> <span class="st">&quot;grey45&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div>
+<div class="figure">
+<img src="ndrlm-workflow_files/figure-html/diagnostic-figure-1.png" alt="Observed versus fitted fuel efficiency and residual diagnostic for the latent-input model." width="100%" />
+<p class="caption">
+Observed versus fitted fuel efficiency and residual diagnostic for the
+latent-input model.
+</p>
+</div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">par</span>(op)</span></code></pre></div>
+<p>These plots are descriptive in-sample diagnostics. A predictive study
+should evaluate the complete reduction-and-regression pipeline using
+held-out data or resampling.</p>
+</div>
+<div id="input-output-and-full-latent-models" class="section level1"
+number="4">
+<h1><span class="header-section-number">4</span> Input, output, and full
+latent models</h1>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><code>latents</code></th>
+<th>Predictors used by regression</th>
+<th>Responses used by regression</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>"none"</code></td>
+<td>observed <code>X</code></td>
+<td>observed <code>Y</code></td>
+</tr>
+<tr class="even">
+<td><code>"in"</code></td>
+<td>input NDA scores</td>
+<td>observed <code>Y</code></td>
+</tr>
+<tr class="odd">
+<td><code>"out"</code></td>
+<td>observed <code>X</code></td>
+<td>output NDA scores</td>
+</tr>
+<tr class="even">
+<td><code>"both"</code></td>
+<td>input NDA scores</td>
+<td>output NDA scores</td>
+</tr>
+</tbody>
+</table>
+<p>The next executable example reduces both sides. Two observed response
+indicators form one output latent variable. With
+<code>dircon = TRUE</code>, membership zero would retain an excluded
+indicator as a direct observed variable.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>X_both <span class="ot">&lt;-</span> mtcars[, <span class="fu">c</span>(<span class="st">&quot;cyl&quot;</span>, <span class="st">&quot;disp&quot;</span>, <span class="st">&quot;hp&quot;</span>, <span class="st">&quot;wt&quot;</span>, <span class="st">&quot;qsec&quot;</span>, <span class="st">&quot;vs&quot;</span>, <span class="st">&quot;am&quot;</span>, <span class="st">&quot;gear&quot;</span>)]</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>Y_both <span class="ot">&lt;-</span> mtcars[, <span class="fu">c</span>(<span class="st">&quot;mpg&quot;</span>, <span class="st">&quot;drat&quot;</span>)]</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>fit_both <span class="ot">&lt;-</span> <span class="fu">ndrlm</span>(</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  Y_both, X_both,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">latents =</span> <span class="st">&quot;both&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">optimize =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">membership.X =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>),</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">membership.Y =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">regression =</span> <span class="st">&quot;lm&quot;</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>)</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>fit_both<span class="sc">$</span>NDAin<span class="sc">$</span>membership</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; [1] 1 2 1 2 1 1 2 2</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>fit_both<span class="sc">$</span>NDAout<span class="sc">$</span>membership</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; [1] 1 1</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>fit_both<span class="sc">$</span>indep_names</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; [1] &quot;NDAin1&quot; &quot;NDAin2&quot;</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>fit_both<span class="sc">$</span>dep_names</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; [1] &quot;NDAout1&quot;</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">fitted</span>(fit_both))</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt;                       NDAout1</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; Mazda RX4          0.97433368</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; Mazda RX4 Wag      0.79549782</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; Datsun 710         0.33047165</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; Hornet 4 Drive    -0.32859439</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; Hornet Sportabout -0.01532464</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; Valiant           -0.47118761</span></span></code></pre></div>
+</div>
+<div id="regression-engines-with-visible-results" class="section level1"
+number="5">
+<h1><span class="header-section-number">5</span> Regression engines with
+visible results</h1>
+<p>The enclosing NDRLM interface is the same for every engine. OLS
+provides coefficient tests and intervals. Ridge stabilizes correlated
+predictors. Elastic net combines shrinkage with coefficient selection.
+LOESS provides a small-predictor nonlinear model but no linear-path
+significance tests.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>fit_ols <span class="ot">&lt;-</span> fit_latent</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;glmnet&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  fit_ridge <span class="ot">&lt;-</span> <span class="fu">ndrlm</span>(</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>    Y_car, X_car,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>    <span class="at">latents =</span> <span class="st">&quot;in&quot;</span>, <span class="at">optimize =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>    <span class="at">membership.X =</span> input_membership,</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>    <span class="at">regression =</span> <span class="st">&quot;ridge&quot;</span>, <span class="at">lambda =</span> <span class="fl">0.05</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  )</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>  fit_elastic <span class="ot">&lt;-</span> <span class="fu">ndrlm</span>(</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>    Y_car, X_car,</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>    <span class="at">latents =</span> <span class="st">&quot;in&quot;</span>, <span class="at">optimize =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>    <span class="at">membership.X =</span> input_membership,</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>    <span class="at">regression =</span> <span class="st">&quot;elastic_net&quot;</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">lambda =</span> <span class="fl">0.05</span>,</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>    <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  )</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>  engine_results <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>    <span class="at">OLS =</span> fit_ols<span class="sc">$</span>fit_stats,</span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>    <span class="at">Ridge =</span> fit_ridge<span class="sc">$</span>fit_stats,</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>    <span class="at">Elastic_net =</span> fit_elastic<span class="sc">$</span>fit_stats</span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  )</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>  engine_results</span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>  <span class="fu">round</span>(<span class="fu">cbind</span>(</span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>    <span class="at">ridge =</span> fit_ridge<span class="sc">$</span>fits[[<span class="dv">1</span>]]<span class="sc">$</span>standardized_coefficients,</span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>    <span class="at">elastic_net =</span> fit_elastic<span class="sc">$</span>fits[[<span class="dv">1</span>]]<span class="sc">$</span>standardized_coefficients</span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>  ), <span class="dv">3</span>)</span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;Install the suggested package &#39;glmnet&#39; to run ridge and elastic net.</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>}</span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#&gt;         ridge elastic_net</span></span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="co">#&gt; NDAin1 -0.695      -0.693</span></span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="co">#&gt; NDAin2  0.044       0.040</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>fit_loess <span class="ot">&lt;-</span> <span class="fu">ndrlm</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  Y_car,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  X_car[<span class="st">&quot;wt&quot;</span>],</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">latents =</span> <span class="st">&quot;none&quot;</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">regression =</span> <span class="st">&quot;loess&quot;</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">loess_span =</span> <span class="fl">0.80</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">predict</span>(fit_loess, X_car[<span class="st">&quot;wt&quot;</span>]))</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt;                        mpg</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt; Mazda RX4         22.18677</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Mazda RX4 Wag     21.07864</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Datsun 710        24.99968</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Hornet 4 Drive    19.40155</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; Hornet Sportabout 17.93234</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; Valiant           17.81902</span></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>fit_loess<span class="sc">$</span>fit_stats</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="co">#&gt;   response    metric</span></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; 1      mpg 0.7931395</span></span></code></pre></div>
+<p>The displayed ridge and elastic-net values are standardized
+coefficients. The path plots use the same scale by default, making
+linear path magnitudes comparable across differently scaled predictors
+and responses. Prediction metrics should still be compared on a common
+validation design when prediction is the scientific goal.</p>
+</div>
+<div id="nsga-ii-optimization-and-convergence-history"
+class="section level1" number="6">
+<h1><span class="header-section-number">6</span> NSGA-II optimization
+and convergence history</h1>
+<p>When <code>optimize = TRUE</code>, NSGA-II tunes indicator weights
+and the four NDA thresholds. This deliberately small run demonstrates
+the complete interface. Larger populations, more generations, and
+repeated runs are appropriate for a final analysis.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>fit_optimized <span class="ot">&lt;-</span> <span class="fu">ndrlm</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  Y_car, X_car,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">latents =</span> <span class="st">&quot;in&quot;</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">membership.X =</span> input_membership,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">optimize =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">target =</span> <span class="st">&quot;adj.r.square&quot;</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="at">rel_weight =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">lower.bounds.x =</span> <span class="fu">rep</span>(<span class="fl">0.5</span>, <span class="fu">ncol</span>(X_car)),</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="at">upper.bounds.x =</span> <span class="fu">rep</span>(<span class="fl">1.5</span>, <span class="fu">ncol</span>(X_car)),</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  <span class="at">lower.bounds.latentx =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>),</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>  <span class="at">upper.bounds.latentx =</span> <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.01</span>, <span class="fl">0.01</span>, <span class="fl">0.01</span>),</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>  <span class="at">popsize =</span> <span class="dv">4</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>  <span class="at">generations =</span> <span class="dv">3</span>,</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>  <span class="at">restarts =</span> <span class="dv">1</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>  <span class="at">regression =</span> <span class="st">&quot;lm&quot;</span>,</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>)</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>fit_optimized<span class="sc">$</span>optimized</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>fit_optimized<span class="sc">$</span>fval</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt; [1] 0.6360032</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="fu">round</span>(fit_optimized<span class="sc">$</span>NDAin_weight, <span class="dv">3</span>)</span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt;  [1] 0.971 1.314 1.269 1.364 0.911 1.106 0.517 1.367 0.573 0.609</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="fu">tail</span>(fit_optimized<span class="sc">$</span>NSGA_trace)</span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt;    restart evaluation generation target_value       cost best_target</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; 11       1         11          2    0.6134205 -0.6134205   0.6248127</span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; 12       1         12          2    0.6167337 -0.6167337   0.6248127</span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; 13       1         13          3    0.6360032 -0.6360032   0.6360032</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; 14       1         14          3    0.6293834 -0.6293834   0.6360032</span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="co">#&gt; 15       1         15          3    0.6259359 -0.6259359   0.6360032</span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="co">#&gt; 16       1         16          3    0.6185751 -0.6185751   0.6360032</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>trace <span class="ot">&lt;-</span> fit_optimized<span class="sc">$</span>NSGA_trace</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">plot</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  trace<span class="sc">$</span>evaluation,</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  trace<span class="sc">$</span>best_target,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;s&quot;</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">&quot;#0072B2&quot;</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">xlab =</span> <span class="st">&quot;Objective evaluation&quot;</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="at">ylab =</span> <span class="st">&quot;Best adjusted R-squared&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  <span class="at">main =</span> <span class="st">&quot;NSGA-II search history&quot;</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>)</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="fu">points</span>(trace<span class="sc">$</span>evaluation, trace<span class="sc">$</span>target_value,</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>       <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.65</span>, <span class="at">col =</span> grDevices<span class="sc">::</span><span class="fu">adjustcolor</span>(<span class="st">&quot;grey35&quot;</span>, <span class="fl">0.45</span>))</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="fu">lines</span>(trace<span class="sc">$</span>evaluation, trace<span class="sc">$</span>best_target, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">&quot;#0072B2&quot;</span>)</span></code></pre></div>
+<div class="figure">
+<img src="ndrlm-workflow_files/figure-html/convergence-figure-1.png" alt="Best adjusted R-squared encountered during the compact NSGA-II run." width="100%" />
+<p class="caption">
+Best adjusted R-squared encountered during the compact NSGA-II run.
+</p>
+</div>
+<p>The grey points are evaluated candidates; the blue step line is the
+best target value encountered so far. A short flat segment is not proof
+of global convergence, but the trace makes search progress transparent
+and helps compare longer runs and restarts.</p>
+</div>
+<div id="static-and-interactive-latent-path-networks"
+class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Static and interactive
+latent path networks</h1>
+<div id="static-latent-path-network" class="section level2"
+number="7.1">
+<h2><span class="header-section-number">7.1</span> Static latent path
+network</h2>
+<p>The both-sides model is used here because it shows the full
+four-layer structure: observed inputs, two input latent variables, one
+output latent variable, and observed outputs.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>path_network <span class="ot">&lt;-</span> <span class="fu">plot</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  fit_both,</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">sig =</span> <span class="dv">1</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">interactive =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  <span class="at">show_edge_labels =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">shape =</span> <span class="st">&quot;automatic&quot;</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>)</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>path_network</span></code></pre></div>
+<div class="figure">
+<img src="ndrlm-workflow_files/figure-html/ndrlm-static-network-1.png" alt="Both-sides NDRLM graph. Rectangles are observed indicators, circles are latent variables, and path colour carries sign." width="100%" />
+<p class="caption">
+Both-sides NDRLM graph. Rectangles are observed indicators, circles are
+latent variables, and path colour carries sign.
+</p>
+</div>
+<p>Observed variables are rectangles and latent variables are circles,
+following standard structural-model notation. Each latent variable and
+its observed indicators share one colour from the default light
+qualitative palette. Measurement loadings are grey. Positive regression
+paths are green, negative paths are red, and absolute magnitude is
+mapped to width separately within loadings and structural paths.
+Structural labels and widths use standardized coefficients for OLS,
+ridge, and elastic net; loading labels retain their loading scale.
+Measurement links between observed and latent variables are dashed;
+structural paths are solid. Latent nodes are centred on the indicators
+assigned to them. Active layers are packed without leaving blank
+columns, and the default fills are slightly lightened and translucent.
+Edge labels use opaque backgrounds displaced from their paths. Colours,
+line types, shapes, and the minimum/maximum width can be overridden
+explicitly when a publication requires another convention.</p>
+</div>
+<div id="interactive-latent-path-network" class="section level2"
+number="7.2">
+<h2><span class="header-section-number">7.2</span> Interactive latent
+path network</h2>
+<p>The interactive graph preserves the static layout and visual grammar.
+Nodes remain movable, and edge labels stay readable on an opaque
+background while the view is zoomed or rearranged.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>interactive_path_network <span class="ot">&lt;-</span> <span class="fu">plot</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  fit_both,</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">sig =</span> <span class="dv">1</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">interactive =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="at">show_edge_labels =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>  <span class="at">shape =</span> <span class="st">&quot;automatic&quot;</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>interactive_path_network<span class="sc">$</span>widget</span></code></pre></div>
+<div id="htmlwidget-140b00e6e2043b7c9e61" style="width:100%;height:850px;" class="visNetwork html-widget"></div>
+<script type="application/json" data-for="htmlwidget-140b00e6e2043b7c9e61">{"x":{"nodes":{"id":["X:cyl","X:disp","X:hp","X:wt","X:qsec","X:vs","X:am","X:gear","Lin:NDAin1","Lin:NDAin2","Lout:NDAout1","Y:mpg","Y:drat"],"label":["cyl","disp","hp","wt","qsec","vs","am","gear","NDAin1","NDAin2","NDAout1","mpg","drat"],"color":["#F0A4B4E6","#95C683E6","#F0A4B4E6","#95C683E6","#F0A4B4E6","#F0A4B4E6","#95C683E6","#95C683E6","#F0A4B4E6","#95C683E6","#89BFEBE6","#89BFEBE6","#89BFEBE6"],"shape":["box","box","box","box","box","box","box","box","ellipse","ellipse","ellipse","box","box"],"x":[-270,-270,-270,-270,-270,-270,-270,-270,-89.99999999999999,-89.99999999999999,89.99999999999999,270.0000000000001,270.0000000000001],"y":[-270.6,38.65714285714284,-193.2857142857142,115.9714285714285,-115.9714285714286,-38.65714285714284,193.2857142857143,270.6,-154.6285714285714,154.6285714285714,-0,-270.6,270.6],"fixed":[false,false,false,false,false,false,false,false,false,false,false,false,false],"font.size":[11,11,11,11,11,11,11,11,11,11,11,11,11],"font.color":["#17202A","#17202A","#17202A","#17202A","#17202A","#17202A","#17202A","#17202A","#17202A","#17202A","#17202A","#17202A","#17202A"],"borderWidth":[1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5],"title":["cyl - indicator in","disp - indicator in","hp - indicator in","wt - indicator in","qsec - indicator in","vs - indicator in","am - indicator in","gear - indicator in","NDAin1 - latent in","NDAin2 - latent in","NDAout1 - latent out","mpg - indicator out","drat - indicator out"]},"edges":{"from":["X:cyl","X:disp","X:hp","X:wt","X:qsec","X:vs","X:am","X:gear","Y:mpg","Y:drat","Lin:NDAin1","Lin:NDAin2"],"to":["Lin:NDAin1","Lin:NDAin2","Lin:NDAin1","Lin:NDAin2","Lin:NDAin1","Lin:NDAin1","Lin:NDAin2","Lin:NDAin2","Lout:NDAout1","Lout:NDAout1","Lout:NDAout1","Lout:NDAout1"],"weight":[0.4381018073440163,0.5622867993446294,0.4276815768554214,0.4886650393603909,0.2565450233550221,0.0892501444437292,0.2198918510777498,0.3051020713738686,0.9168347473254789,0.916834747325479,-0.5575830807522612,-0.291751344575727],"color":["grey60","grey60","grey60","grey60","grey60","grey60","grey60","grey60","grey60","grey60","#C62828","#C62828"],"lty":[2,2,2,2,2,2,2,2,2,2,1,1],"role":["loading","loading","loading","loading","loading","loading","loading","loading","loading","loading","path","path"],"width":[3.107649548369698,3.857935329232379,3.044693867148041,3.413136333891729,2.01074185242664,1,1.789295174046922,2.304107919471416,6,6,6,1],"dashes":[true,true,true,true,true,true,true,true,true,true,false,false],"arrows":["to","to","to","to","to","to","to","to","to","to","to","to"],"label":["0.438","0.562","0.428","0.489","0.257","0.089","0.220","0.305","0.917","0.917","-0.558","-0.292"],"font.size":[9,9,9,9,9,9,9,9,9,9,9,9],"font.color":["#333333","#333333","#333333","#333333","#333333","#333333","#333333","#333333","#333333","#333333","#333333","#333333"],"font.background":["#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6","#FFFFFFE6"]},"nodesToDataframe":true,"edgesToDataframe":true,"options":{"width":"100%","height":"100%","nodes":{"shape":"dot","shadow":{"enabled":true,"color":"rgba(0,0,0,0.16)","size":5,"x":1,"y":2},"margin":12},"manipulation":{"enabled":false},"edges":{"font":{"background":"#FFFFFFE6","align":"middle","strokeWidth":0},"smooth":{"enabled":true,"type":"continuous","roundness":0.1}},"interaction":{"dragNodes":true,"dragView":true,"hideEdgesOnDrag":false,"zoomView":true,"zoomSpeed":1},"physics":{"enabled":false}},"groups":null,"width":"100%","height":"850px","idselection":{"enabled":false,"style":"width: 150px; height: 26px","useLabels":true,"main":"Select by id"},"byselection":{"enabled":true,"style":"width: 150px; height: 26px","multiple":false,"hideColor":"rgba(200,200,200,0.5)","highlight":false,"variable":"label","main":"Select by label","values":["NDAin1","NDAin2","NDAout1","am","cyl","disp","drat","gear","hp","mpg","qsec","vs","wt"]},"main":null,"submain":null,"footer":null,"background":"rgba(0, 0, 0, 0)","highlight":{"enabled":true,"hoverNearest":false,"degree":1,"algorithm":"all","hideColor":"rgba(200,200,200,0.5)","labelOnly":true},"collapse":{"enabled":false,"fit":false,"resetHighlight":true,"clusterOptions":null,"keepCoord":true,"labelSuffix":"(cluster)"},"tooltipStay":300,"tooltipStyle":"position: fixed;visibility:hidden;padding: 5px;white-space: nowrap;font-family: verdana;font-size:14px;font-color:#000000;background-color: #f5f4ed;-moz-border-radius: 3px;-webkit-border-radius: 3px;border-radius: 3px;border: 1px solid #808074;box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);"},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div id="references" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> References</h1>
+<p>The references connect the original and generalized NDA methods to
+the package implementation and the supervised network-based structural
+extension <span class="citation">(<a href="#ref-Kosztyan2022">Kosztyán
+et al. 2022</a>, <a href="#ref-Kosztyan2024">2024</a>; <a
+href="#ref-Kosztyan2023">Kosztyán 2023</a>; <a
+href="#ref-Kosztyan2026Packages">Kosztyán 2026b</a>, <a
+href="#ref-Kosztyan2026NBSEM">2026a</a>)</span>.</p>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-Kosztyan2026NBSEM" class="csl-entry">
+Kosztyán, Zsolt T. 2026a. <span>“Network-Based Structural Equation
+Models for Supervised Machine Learning Problems.”</span> Unpublished
+manuscript.
+</div>
+<div id="ref-Kosztyan2026Packages" class="csl-entry">
+Kosztyán, Zsolt T. 2026b. <span>“R and MATLAB Packages for Network-Based
+Dimensionality Reduction Analysis.”</span> Unpublished manuscript.
+</div>
+<div id="ref-Kosztyan2023" class="csl-entry">
+Kosztyán, Zsolt Tibor. 2023. <span>“Hálózatalapú Modell- És
+Adatredukciós Módszer.”</span> <em>Statisztikai Szemle</em> 101 (4):
+289–324. <a
+href="https://doi.org/10.20311/stat2023.04.hu0289">https://doi.org/10.20311/stat2023.04.hu0289</a>.
+</div>
+<div id="ref-Kosztyan2024" class="csl-entry">
+Kosztyán, Zsolt T., Attila I. Katona, Marcell T. Kurbucz, and Zoltán
+Lantos. 2024. <span>“Generalized Network-Based Dimensionality
+Analysis.”</span> <em>Expert Systems with Applications</em> 238: 121779.
+<a
+href="https://doi.org/10.1016/j.eswa.2023.121779">https://doi.org/10.1016/j.eswa.2023.121779</a>.
+</div>
+<div id="ref-Kosztyan2022" class="csl-entry">
+Kosztyán, Zsolt T., Marcell T. Kurbucz, and Attila I. Katona. 2022.
+<span>“Network-Based Dimensionality Reduction of High-Dimensional,
+Low-Sample-Size Datasets.”</span> <em>Knowledge-Based Systems</em> 251:
+109180. <a
+href="https://doi.org/10.1016/j.knosys.2022.109180">https://doi.org/10.1016/j.knosys.2022.109180</a>.
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

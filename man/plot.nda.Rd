@@ -1,62 +1,68 @@
 \name{plot.nda}
 \alias{plot.nda}
-\title{
-Plot function for Generalized Network-based Dimensionality Reduction and Analysis (GNDA)
-}
-\description{
-Plot variable network graph
-}
+\title{Plot an NDA Association Network}
+\description{Creates a printable static grid or interactive \pkg{visNetwork}
+network object. Assignment does not draw; printing the result draws it. The
+legacy \pkg{igraph} renderer remains available explicitly. Communities use a
+light qualitative node palette by default.}
 \usage{
-\method{plot}{nda}(x, cuts=0.3, interactive=TRUE,edgescale=1.0,labeldist=-1.5,show_weights=FALSE,...)
+\method{plot}{nda}(x, cuts = 0.3, interactive = FALSE, edgescale = 1,
+    labeldist = -1.5, show_weights = FALSE, shapes = NULL,
+    shape = "automatic", static.engine = c("grid", "igraph"),
+    edge.color.links = TRUE, edge.colors = NULL,
+    positive.color = "#009E73", negative.color = "#C62828",
+    neutral.color = "grey65", positive.lty = 1, negative.lty = 1,
+    neutral.lty = 1, edge.width.range = c(1, 6),
+    edge.label.size = 10, edge.label.color = "#333333",
+    edge.label.background = "#FFFFFFE6", edge.label.offset = 0.022,
+    vertex.label.size = 12, vertex.label.color = "automatic",
+    node.border.color = "#25313C",
+    layout = "nicely", igraph_args = list(), visnetwork_args = list(), ...)
 }
 \arguments{
-  \item{x}{an object of class 'NDA'.}
-  \item{cuts}{minimal square correlation value for an edge in the correlation network graph (default 0.3).}
-  \item{interactive}{Plot interactive visNetwork graph or non-interactive igraph plot (default TRUE).}
-  \item{edgescale}{Proportion scale value of edge width.}
-  \item{labeldist}{Vertex label distance in non-interactive igraph plot (default value =-1.5).}
-  \item{show_weights}{Show edge weights (default FALSE)).}
-  \item{...}{other graphical parameters.}
+\item{x}{An \code{nda} object.}
+\item{cuts}{Minimum squared correlation, or a two-value retained range. For
+association-matrix models a scalar is interpreted relative to the nonzero
+minimum and maximum.}
+\item{interactive}{Create a \pkg{visNetwork} widget instead of a static graph.}
+\item{edgescale}{Edge-width multiplier.}
+\item{labeldist}{Static vertex-label distance.}
+\item{show_weights}{Label edges with unsquared correlations for row-level
+models and supplied similarities for association-matrix models.}
+\item{shape}{\code{"automatic"} uses one common rectangle for every indicator.
+Alternatively, supply one shape or one shape per node. Community membership is
+shown by colour, not shape.}
+\item{shapes}{Backward-compatible alias for \code{shape}.}
+\item{static.engine}{Static renderer. The default \code{"grid"} renderer uses
+layered labels with opaque backgrounds; \code{"igraph"} retains the legacy
+renderer.}
+\item{edge.color.links}{Colour links by the sign of the unsquared association.}
+\item{edge.colors}{Optional legacy low/middle/high colour scale. When
+\code{NULL}, positive, negative, and zero associations use the three explicit
+colours below.}
+\item{positive.color,negative.color,neutral.color}{Default signed edge colours.}
+\item{positive.lty,negative.lty,neutral.lty}{Line types for signed edges. All
+are solid by default.}
+\item{edge.width.range}{Minimum and maximum edge widths. Absolute association
+magnitude is rescaled to this interval.}
+\item{edge.label.size,edge.label.color,edge.label.background,edge.label.offset}{
+Edge-label appearance, background, and perpendicular displacement from the
+edge.}
+\item{vertex.label.size,vertex.label.color}{Vertex-label appearance. The
+\code{"automatic"} colour selects black or white for readable contrast.}
+\item{node.border.color}{Node-border colour.}
+\item{layout}{An igraph layout suffix such as \code{"nicely"}, \code{"fr"}, or \code{"circle"}.}
+\item{igraph_args}{Named legacy static plot arguments, used when
+\code{static.engine = "igraph"}.}
+\item{visnetwork_args}{Named lists called \code{network}, \code{nodes},
+\code{edges}, \code{options}, \code{interaction}, and \code{layout}, forwarded
+to matching visNetwork functions.}
+\item{...}{Additional legacy static \code{plot.igraph} arguments.}
 }
-\references{
-Kosztyán, Z. T., Katona, A. I., Kurbucz, M. T., & Lantos, Z. (2024). Generalized network-based dimensionality analysis. Expert Systems with Applications, 238, 121779. <URL:
-https://doi.org/10.1016/j.eswa.2023.121779>.
-
-}
-\author{
-Zsolt T. Kosztyan*, Marcell T. Kurbucz, Attila I. Katona
-
-e-mail*: kosztyan.zsolt@gtk.uni-pannon.hu
-}
-
-\seealso{\code{\link{biplot}}, \code{\link{summary}}, \code{\link{ndr}}.}
-
+\value{An object of class \code{nda_plot}; print it to render.}
 \examples{
-# Plot function with feature selection
-
-data("CrimesUSA1990.X")
-df<-CrimesUSA1990.X
-p<-ndr(df)
-biplot(p,main="Biplot of CrimesUSA1990 without feature selection")
-
-# Plot function with feature selection
-# minimal eigen values (min_evalue) is 0.0065
-# minimal communality value (min_communality) is 0.1
-# minimal common communality value (com_communalities) is 0.1
-
-p<-ndr(df,min_evalue = 0.0065,min_communality = 0.1,com_communalities = 0.1)
-
-# Plot with default (cuts=0.3)
-plot(p)
-
-# Plot with higher cuts
-plot(p,cuts=0.6)
-
-# GNDA is used for clustering, where the similarity function is the 1-Euclidean distance
-# Data is the swiss data
-
-SIM<-1-normalize(as.matrix(dist(swiss)))
-q<-ndr(SIM,covar = TRUE)
-plot(q,interactive = FALSE)
+fit <- ndr(swiss)
+p <- plot(fit, interactive = FALSE, show_weights = TRUE)
+p
 }
 \keyword{multivariate}
